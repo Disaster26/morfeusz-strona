@@ -1,0 +1,46 @@
+# Zaklad Pogrzebowy Morfeusz - konfiguracja dla serwera Apache (hosting klienta).
+# Na GitHub Pages ten plik jest pomijany.
+
+Options -Indexes
+DirectoryIndex index.html
+ErrorDocument 404 /404.html
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# 1. HTTPS i adres bez www
+RewriteCond %{HTTPS} !=on [OR]
+RewriteCond %{HTTP_HOST} ^www\. [NC]
+RewriteRule ^(.*)$ https://zpmorfeusz.czest.pl/$1 [R=301,L]
+
+# 2. Stare adresy WordPressa -> nowe strony
+RewriteRule ^index\.php$ / [R=301,L]
+RewriteRule ^(oferta|galeria|kontakt|polityka-prywatnosci)$ /$1/ [R=301,L]
+RewriteRule ^sitemap_index\.xml$ /sitemap.xml [R=301,L]
+RewriteRule ^(page-sitemap|post-sitemap|attachment-sitemap)\.xml$ /sitemap.xml [R=301,L]
+RewriteRule ^feed/?$ / [R=301,L]
+RewriteRule ^comments/feed/?$ / [R=301,L]
+RewriteRule ^wp-content/uploads/ /galeria/ [R=301,L]
+RewriteRule ^(wp-admin|wp-includes|wp-content)(/.*)?$ - [G,L]
+RewriteRule ^(wp-login|xmlrpc|wp-load|wp-cron)\.php$ - [G,L]
+RewriteCond %{QUERY_STRING} (^|&)(p|page_id|themeoption)= [NC]
+RewriteRule ^$ /? [R=301,L]
+</IfModule>
+
+# 3. Pamiec podreczna przegladarki
+<IfModule mod_expires.c>
+ExpiresActive On
+ExpiresByType image/webp "access plus 1 year"
+ExpiresByType image/png "access plus 1 year"
+ExpiresByType image/x-icon "access plus 1 year"
+ExpiresByType image/svg+xml "access plus 1 year"
+ExpiresByType font/woff2 "access plus 1 year"
+ExpiresByType text/css "access plus 1 month"
+ExpiresByType application/javascript "access plus 1 month"
+ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+<IfModule mod_deflate.c>
+AddOutputFilterByType DEFLATE text/html text/css application/javascript image/svg+xml application/xml text/plain
+</IfModule>
+AddType font/woff2 .woff2
+AddType image/webp .webp

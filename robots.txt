@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://zpmorfeusz.czest.pl/sitemap.xml
