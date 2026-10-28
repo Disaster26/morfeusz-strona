@@ -38,6 +38,8 @@ im=otworz('20151015_164556.jpg'); zapisz(im,'chlodnia',[480,800,1200])
 im=otworz('20220826_132521.jpg'); zapisz(im,'stojak-urna',[480,800,1200],q=60)
 im=otworz('20230425_132437.jpg'); k=im.width/750; im=im.crop((int(235*k),0,im.width,im.height)); zapisz(im,'grob-namiot',[480,800,1200],q=58)
 im=otworz('IMG_20180720_152351.jpg'); blur(im,750,[(105,135,175,190),(285,130,345,175)],r=14); zapisz(im,'pogrzeb-urnowy',[480,800,1200],q=60)
+# 28.10: zgoda klienta na zdjecie z kosciola bez portretu i tabliczki z nazwiskiem - kadr bez sztalugi i bez tabliczki
+im=otworz('20250109_101525.jpg'); k=im.width/900; im=im.crop((int(232*k),0,im.width,int(765*k))); zapisz(im,'ceremonia-kosciol',[480,800,1200],q=62)
 # z archiwum (wizualizacja, juz rozmyte)
 for f,n in [('biuro','biuro'),('urny','urny'),('karawan','karawan'),('flota','karawany-kosciol'),('siedziba','siedziba'),('wieniec','wieniec'),('urna-grob','urna-grob'),('namiot','namiot-zima'),('hero-pion','namiot-zima-2')]:
     im=Image.open(os.path.join(KON,f+'.webp')); zapisz(im,n,[480,im.width] if im.width>560 else [im.width])

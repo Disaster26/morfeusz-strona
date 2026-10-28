@@ -491,6 +491,8 @@ def galeria():
             ('biuro', 'Biuro obsługi'), ('urny', 'Urny w zakładzie')]),
         ('Kaplica', 'Przy zakładzie jest kaplica, w której rodzina może pożegnać zmarłego przed pogrzebem.', [
             ('kaplica', 'Kaplica przy zakładzie'), ('kaplica-ceremonia', 'Kaplica przed pożegnaniem')]),
+        ('Ceremonia', 'Przygotowujemy oprawę ceremonii w kościele: urnę lub trumnę na katafalku, świece, wieńce i wiązanki.', [
+            ('ceremonia-kosciol', 'Oprawa ceremonii w kościele')]),
         ('Chłodnia i transport', 'Własna chłodnia i karawany pozwalają nam zająć się zmarłym od razu, o każdej porze.', [
             ('chlodnia', 'Własna chłodnia'), ('karawan', 'Karawan zakładu'), ('karawany-kosciol', 'Karawany przed kościołem')]),
         ('Na cmentarzu', 'Przy grobie rozstawiamy namiot z zasłonami, teren wokół wykładamy matą, a przy pogrzebie urnowym przygotowujemy stojak na urnę.', [
