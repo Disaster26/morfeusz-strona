@@ -273,6 +273,7 @@ a.kafel:hover h3{text-decoration:underline;text-underline-offset:5px;text-decora
 }
 
 @media (max-width:760px){
+  html{scroll-padding-bottom:96px}
   body{font-size:16px}
   .logo-n{font-size:23px}
   .logo-s{font-size:12px}
