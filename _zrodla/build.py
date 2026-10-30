@@ -16,13 +16,13 @@ INFO = json.load(open(os.path.join(os.path.dirname(__file__), 'zdjecia.json'), e
 DOMENA = 'https://zpmorfeusz.czest.pl'
 FORM_ADRES = 'https://formsubmit.co/ajax/' + ('zpmorfeusz@onet.eu' if PROD else 'stasiu2626@gmail.com')
 BASE_404 = '/' if PROD else '/morfeusz-strona/'
-WERSJA = '3'
+WERSJA = '4'
 
 TEL = ('601 460 964', 'tel:+48601460964')
 TEL_STACJ = ('34 327 51 06', 'tel:+48343275106')
 TEL_KOM = ('603 847 926', 'tel:+48603847926')
 MAIL = 'zpmorfeusz@onet.eu'
-GMAPS = 'https://www.google.com/maps/search/?api=1&query=Zak%C5%82ad+Pogrzebowy+Morfeusz%2C+G%C3%B3rna+30%2C+42-263+Wrzosowa'
+GMAPS = 'https://maps.google.com/?cid=17143928824409373613'
 GTRASA = 'https://www.google.com/maps/dir/?api=1&destination=G%C3%B3rna+30%2C+42-263+Wrzosowa'
 OSM = 'https://www.openstreetmap.org/?mlat=50.74755&mlon=19.14560#map=17/50.74755/19.14560'
 
@@ -62,6 +62,8 @@ def schema_firma():
         'telephone': '+48601460964',
         'email': MAIL,
         'taxID': '5731706929',
+        'foundingDate': '1997',
+        'logo': DOMENA + '/img/logo-560.webp',
         'address': {'@type': 'PostalAddress', 'streetAddress': 'ul. Górna 30', 'postalCode': '42-263',
                     'addressLocality': 'Wrzosowa', 'addressRegion': 'śląskie', 'addressCountry': 'PL'},
         'geo': {'@type': 'GeoCoordinates', 'latitude': 50.74755, 'longitude': 19.14560},
@@ -127,8 +129,7 @@ def strona(sciezka, tytul, opis, tresc, glowna=False, schemy=None, preload='', n
 <header class="top">
   <div class="wrap top-in">
     <a class="logo" href="{R if R else './'}" aria-label="Zakład Pogrzebowy Morfeusz - strona główna">
-      <span class="logo-n">Morfeusz</span>
-      <span class="logo-s">Zakład Pogrzebowy</span>
+      <img src="{R}img/logo-360.webp" srcset="{R}img/logo-360.webp 360w, {R}img/logo-560.webp 560w" sizes="182px" alt="Zakład Pogrzebowy Morfeusz" width="948" height="260" decoding="async">
     </a>
     <nav class="nav" id="nav" aria-label="Menu">
 {nav}      <a class="nav-tel" href="{TEL[1]}">Zadzwoń całą dobę: {TEL[0]}</a>
@@ -244,8 +245,8 @@ def glowna():
         ('transport', 'karawan', 'Karawan zakładu Morfeusz', 'Transport', ['Krajowy i międzynarodowy transport zwłok', 'Karawany i autokary', 'Własna chłodnia']),
         ('ubieranie', None, '', 'Ubieranie i kosmetyka', 'Ubieranie i kosmetyka osób zmarłych - z szacunkiem, według życzeń rodziny.'),
         ('oprawa', 'kaplica-ceremonia', 'Kaplica z trumną i kwiatami przed ceremonią', 'Oprawa ceremonii', ['Oprawa muzyczna: trąbka, skrzypce, orkiestra, organista', 'Wieńce i wiązanki', 'Dekoracje żałobne mieszkań']),
-        ('cmentarz', 'grob-namiot', 'Namiot zakładu nad grobem przygotowanym do pochówku', 'Usługi grabarskie', 'Przygotowanie grobu i obsługa ceremonii na cmentarzu.'),
-        ('kamieniarstwo', None, '', 'Kamieniarstwo', ['Pomniki', 'Nagrobki urnowe', 'Litery i zdjęcia na pomnikach', 'Poziomowanie i naprawa pomników']),
+        ('cmentarz', 'grob-namiot', 'Namiot zakładu nad grobem przygotowanym do pochówku', 'Usługi grabarskie', 'Usługi grabarskie na cmentarzu we Wrzosowej: przygotowanie grobu i obsługa ceremonii.'),
+        ('kamieniarstwo', None, '', 'Kamieniarstwo', ['Pomniki i nagrobki', 'Nagrobki urnowe', 'Liternictwo i zdjęcia na pomnikach', 'Poziomowanie i naprawa pomników']),
     ]
     k = ''
     for kot, foto, alt, h, tresc in kafle:
@@ -270,7 +271,7 @@ def glowna():
     <p class="hero-adr">Wrzosowa, ul. Górna 30 - okolice Częstochowy</p>
     <h1>Zakład Pogrzebowy „Morfeusz”</h1>
     <p class="hero-czynne"><span class="dot" aria-hidden="true"></span>Czynne całą dobę, także w święta</p>
-    <p class="hero-lead">Kompleksowe usługi pogrzebowe. Pomożemy we wszystkich formalnościach, pogrzeb zorganizujemy także bezgotówkowo.</p>
+    <p class="hero-lead">Od 1997 roku kompleksowe usługi pogrzebowe. Pomożemy we wszystkich formalnościach, pogrzeb zorganizujemy także bezgotówkowo.</p>
     <a class="tel-main" id="telMain" href="{TEL[1]}">
       <span class="tel-lab">Telefon całodobowy</span>
       <span class="tel-num">{TEL[0]}</span>
@@ -319,7 +320,7 @@ def glowna():
   <div class="wrap zaklad">
     <div class="zaklad-tx">
       <h2>Zakład we Wrzosowej</h2>
-      <p>Zakład mieści się przy ul. Górnej 30 we Wrzosowej, w gminie Poczesna pod Częstochową. Mamy własną kaplicę, własną chłodnię oraz karawany, którymi przewozimy zmarłych w kraju i za granicę.</p>
+      <p>Działamy od 1997 roku. Zakład mieści się przy ul. Górnej 30 we Wrzosowej, w gminie Poczesna pod Częstochową. Mamy własną kaplicę, własną chłodnię oraz karawany, którymi przewozimy zmarłych w kraju i za granicę.</p>
       <p>Ceremonie obsługują stosownie ubrani, przeszkoleni pracownicy. Na cmentarzu rozstawiamy namiot z zasłonami, a na życzenie zapewniamy oprawę muzyczną, wieńce i wiązanki.</p>
       <p>Organizujemy pogrzeby dla rodzin z Wrzosowej, Poczesnej, Częstochowy, Kamienicy Polskiej i okolicznych miejscowości.</p>
       <a class="dalej" href="galeria/">Zakład i zdjęcia</a>
@@ -369,11 +370,11 @@ def oferta():
          ['Na życzenie rodziny zapewniamy oprawę muzyczną, kwiaty i dekoracje. Pożegnanie może odbyć się w naszej kaplicy.'],
          ['Oprawa muzyczna: trąbka, skrzypce, orkiestra, organista', 'Wieńce i wiązanki', 'Dekoracje żałobne mieszkań'], None),
         ('cmentarz', 'Usługi grabarskie', 'grob-namiot', 'Namiot zakładu nad grobem wyłożonym zieloną matą',
-         ['Przygotowujemy grób do pochówku i obsługujemy ceremonię na cmentarzu. Przy grobie rozstawiamy namiot z zasłonami, a teren wokół wykładamy matą.'],
-         ['Usługi grabarskie', 'Namiot z zasłonami przy grobie', 'Obsługa pogrzebu tradycyjnego i urnowego'], None),
-        ('kamieniarstwo', 'Usługi kamieniarskie', None, '',
-         ['Po pogrzebie pomagamy w sprawach pomnika: wykonujemy pomniki i nagrobki urnowe, litery i zdjęcia, a także poziomowanie i naprawę pomników.'],
-         ['Pomniki', 'Nagrobki urnowe', 'Litery i zdjęcia na pomnikach', 'Poziomowanie i naprawa pomników'], None),
+         ['Wykonujemy usługi grabarskie na cmentarzu we Wrzosowej. Przygotowujemy grób do pochówku i obsługujemy ceremonię na cmentarzu. Przy grobie rozstawiamy namiot z zasłonami, a teren wokół wykładamy matą.'],
+         ['Usługi grabarskie na cmentarzu we Wrzosowej', 'Namiot z zasłonami przy grobie', 'Obsługa pogrzebu tradycyjnego i urnowego'], None),
+        ('kamieniarstwo', 'Kamieniarstwo i liternictwo', None, '',
+         ['Po pogrzebie pomagamy w sprawach pomnika: wykonujemy pomniki, nagrobki i nagrobki urnowe, liternictwo i zdjęcia na pomnikach, a także poziomowanie i naprawę pomników.'],
+         ['Pomniki', 'Nagrobki', 'Nagrobki urnowe', 'Liternictwo i zdjęcia na pomnikach', 'Poziomowanie i naprawa pomników'], None),
     ]
     b = ''
     for kot, h, foto, alt, pars, lista, link in bloki:
@@ -418,7 +419,7 @@ def oferta():
   </div>
 </section>'''
     zapisz('oferta', strona('oferta/', 'Usługi pogrzebowe Wrzosowa, Częstochowa - oferta | Morfeusz',
-                            'Organizacja pogrzebów i formalności, kremacje, trumny i urny, transport zwłok w kraju i za granicę, własna chłodnia, oprawa muzyczna, wieńce, usługi grabarskie i kamieniarskie.',
+                            'Organizacja pogrzebów i formalności, kremacje, trumny i urny, transport zwłok w kraju i za granicę, własna chłodnia, oprawa muzyczna, wieńce, usługi grabarskie, pomniki, nagrobki i liternictwo.',
                             tresc, schemy=[okruszki('oferta/', 'Oferta')]))
 
 
