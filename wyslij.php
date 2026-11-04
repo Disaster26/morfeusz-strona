@@ -22,7 +22,10 @@
 
    Tryb testowy: zmienna środowiskowa MORFEUSZ_MAIL_DO_PLIKU=<katalog> -> zamiast mail() zapis .eml do katalogu
    i dopuszczony Origin http://localhost; opcjonalnie MORFEUSZ_KATALOG_LIMITOW=<katalog>. Na serwerze tych zmiennych nie ma.
-   Skrypt nie wymaga rozszerzenia mbstring. */
+   Skrypt nie wymaga rozszerzenia mbstring.
+
+   Zgodność: PHP 5.3 - 8.x (serwer ma stare PHP): bez wyrażeń w const, bez ??, bez krótkich tablic [],
+   bez typów i list() w foreach; random_bytes/hash_equals/http_response_code/JSON_UNESCAPED_UNICODE z zamiennikami. */
 
 const ODBIORCA      = 'zpmorfeusz@onet.eu';               // tu przychodzą zgłoszenia
 const NADAWCA       = 'formularz@zpmorfeusz.czest.pl';    // From obu maili (domena strony)
@@ -34,7 +37,7 @@ const LIMIT_GLOBALNY_H = 20;        // powiadomień łącznie na godzinę
 const LIMIT_GLOBALNY_D = 60;        // ... i na dobę
 const LIMIT_POTWIERDZEN = 5;        // potwierdzeń do klientów na godzinę łącznie
 const POTW_NA_ADRES = 86400;        // jedno potwierdzenie na adres e-mail na dobę
-const MAX_ZADANIA = 64 * 1024;      // formularz tekstowy - całe żądanie
+const MAX_ZADANIA = 65536;          // formularz tekstowy - całe żądanie (64 KB)
 const DOMENY = '#^https://(www\.)?zpmorfeusz\.czest\.pl(/|$)#';
 const SEKRET_PLIK = '_sekret_morfeusz.php';
 const ZNACZNIK_MIN = 3;
@@ -47,23 +50,72 @@ header('X-Robots-Tag: noindex');
 header('X-Content-Type-Options: nosniff');
 header('Cache-Control: no-store');
 header('Referrer-Policy: strict-origin-when-cross-origin');
-header_remove('X-Powered-By');
+if (function_exists('header_remove')) header_remove('X-Powered-By');
+
+// ------------------------------------------------------------------ zgodność ze starym PHP
+function wez($t, $k, $dom = null) { return is_array($t) && isset($t[$k]) ? $t[$k] : $dom; }   // zamiast ??
+function losowe($n) {                          // zamiast random_bytes (PHP 7)
+    $n = (int) $n;
+    if (function_exists('random_bytes')) {
+        try { return random_bytes($n); } catch (Exception $e) { }
+    }
+    if (function_exists('openssl_random_pseudo_bytes')) {
+        $silne = false;
+        $b = openssl_random_pseudo_bytes($n, $silne);
+        if (is_string($b) && strlen($b) === $n && $silne) return $b;
+    }
+    if (@is_readable('/dev/urandom') && ($u = @fopen('/dev/urandom', 'rb')) !== false) {
+        $b = fread($u, $n);
+        fclose($u);
+        if (is_string($b) && strlen($b) === $n) return $b;
+    }
+    $b = '';                                   // ostateczność
+    for ($i = 0; $i < $n; $i++) $b .= chr(mt_rand(0, 255));
+    return $b;
+}
+function rowne($a, $b) {                       // zamiast hash_equals (PHP 5.6): porównanie w stałym czasie
+    $a = (string) $a; $b = (string) $b;
+    if (function_exists('hash_equals')) return hash_equals($a, $b);
+    if (strlen($a) !== strlen($b)) return false;
+    $r = 0;
+    for ($i = 0, $n = strlen($a); $i < $n; $i++) $r |= ord($a[$i]) ^ ord($b[$i]);
+    return $r === 0;
+}
+function kod_http($kod) {                      // zamiast http_response_code (PHP 5.4)
+    $kod = (int) $kod;
+    if (function_exists('http_response_code')) { http_response_code($kod); return; }
+    $opisy = array(200 => 'OK', 400 => 'Bad Request', 403 => 'Forbidden', 405 => 'Method Not Allowed',
+        413 => 'Payload Too Large', 422 => 'Unprocessable Entity', 429 => 'Too Many Requests', 500 => 'Internal Server Error');
+    $prot = (string) wez($_SERVER, 'SERVER_PROTOCOL', '');
+    if (!preg_match('#^HTTP/\d(\.\d)?$#', $prot)) $prot = 'HTTP/1.1';
+    header($prot . ' ' . $kod . ' ' . (isset($opisy[$kod]) ? $opisy[$kod] : 'Status'), true, $kod);
+}
+function json($dane) {                         // JSON_UNESCAPED_UNICODE tylko gdy jest (PHP 5.4)
+    return json_encode($dane, defined('JSON_UNESCAPED_UNICODE') ? JSON_UNESCAPED_UNICODE : 0);
+}
+// PHP 5.3 z włączonym magic_quotes_gpc dokleja ukośniki do danych formularza
+if (version_compare(PHP_VERSION, '5.4.0', '<') && function_exists('get_magic_quotes_gpc') && @get_magic_quotes_gpc()) {
+    $bez = function ($v) use (&$bez) { return is_array($v) ? array_map($bez, $v) : stripslashes($v); };
+    $_POST = $bez($_POST);
+    $_GET = $bez($_GET);
+}
+
 $DEV = (string) getenv('MORFEUSZ_MAIL_DO_PLIKU');
-$METODA = $_SERVER['REQUEST_METHOD'] ?? '';
-$JSON = stripos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false || !empty($_SERVER['HTTP_X_REQUESTED_WITH']);
+$METODA = (string) wez($_SERVER, 'REQUEST_METHOD', '');
+$JSON = stripos((string) wez($_SERVER, 'HTTP_ACCEPT', ''), 'application/json') !== false || !empty($_SERVER['HTTP_X_REQUESTED_WITH']);
 
 function h($s) { return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8'); }
 function dziennik($s) { error_log('morfeusz formularz: ' . $s); }   // bez danych osobowych
-function dlugosc($s) { return (int) preg_match_all('/./us', (string) $s); }
+function dlugosc($s) { return (int) preg_match_all('/./us', (string) $s, $m); }   // $m wymagane w PHP 5.3
 function utnij($s, $max) { return preg_match('/^.{0,' . (int) $max . '}/us', (string) $s, $m) ? $m[0] : ''; }
 
-function odpowiedz($ok, $kod = 200, $extra = []) {
+function odpowiedz($ok, $kod = 200, $extra = array()) {
     global $JSON;
-    http_response_code($kod);
+    kod_http($kod);
     if ($kod === 405) header('Allow: GET, POST');
     if ($JSON) {
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['success' => $ok] + $extra, JSON_UNESCAPED_UNICODE);
+        echo json(array('success' => $ok) + $extra);
         exit;
     }
     $tel = 'prosimy zadzwonić: ' . TELEFON . ' (całą dobę).';
@@ -72,13 +124,13 @@ function odpowiedz($ok, $kod = 200, $extra = []) {
            . (!empty($extra['potwierdzenie']) ? ' Potwierdzenie wysłaliśmy na podany adres - jeśli go nie widać, prosimy sprawdzić folder SPAM.' : '')
            . ' W pilnej sprawie ' . $tel;
     } else {
-        $teksty = [
+        $teksty = array(
             422 => 'Coś jest nie tak z danymi w formularzu. Prosimy wrócić i sprawdzić imię, telefon lub e-mail oraz treść wiadomości albo ' . $tel,
             403 => 'Nie udało się przyjąć wiadomości - formularz został wysłany zbyt szybko. Prosimy wrócić, odczekać chwilę i wysłać jeszcze raz albo ' . $tel,
             405 => 'Ten adres przyjmuje tylko wiadomości z formularza kontaktowego.',
             429 => 'Wysłano już kilka wiadomości. Prosimy spróbować później albo ' . $tel,
-        ];
-        $t = $teksty[$kod] ?? 'Nie udało się wysłać wiadomości. Prosimy ' . $tel;
+        );
+        $t = isset($teksty[$kod]) ? $teksty[$kod] : 'Nie udało się wysłać wiadomości. Prosimy ' . $tel;
     }
     header('Content-Type: text/html; charset=utf-8');
     echo '<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -126,17 +178,18 @@ function sekret() {
     $test = (string) getenv('MORFEUSZ_KATALOG_LIMITOW');
     if ($DEV !== '' && $test !== '') {
         katalog_limitow();
-        $kand = [[rtrim($test, '/\\') . '/' . SEKRET_PLIK, true]];
+        $kand = array(array(rtrim($test, '/\\') . '/' . SEKRET_PLIK, true));
     } else {
-        $kand = [[__DIR__ . '/_limity/' . SEKRET_PLIK, false], [dirname(__DIR__) . '/' . SEKRET_PLIK, true]];
+        $kand = array(array(__DIR__ . '/_limity/' . SEKRET_PLIK, false), array(dirname(__DIR__) . '/' . SEKRET_PLIK, true));
     }
-    foreach ($kand as [$p, $w]) if (($k = $wczytaj($p, $w)) !== null) return $s = $k;
+    foreach ($kand as $para) if (($k = $wczytaj($para[0], $para[1])) !== null) return $s = $k;
     if (!($DEV !== '' && $test !== '')) katalog_w_webroot();
-    foreach ($kand as [$p, $w]) {
+    foreach ($kand as $para) {
+        $p = $para[0];
         if (is_file($p) || !is_dir(dirname($p)) || !is_writable(dirname($p))) continue;
-        $nowy = bin2hex(random_bytes(32));
-        $tmp = $p . '.' . bin2hex(random_bytes(4)) . '.tmp';
-        if (@file_put_contents($tmp, "<?php\n// sekret HMAC formularza zpmorfeusz.czest.pl - nie publikować\nreturn ['klucz' => '" . $nowy . "'];\n", LOCK_EX) === false) continue;
+        $nowy = bin2hex(losowe(32));
+        $tmp = $p . '.' . bin2hex(losowe(4)) . '.tmp';
+        if (@file_put_contents($tmp, "<?php\n// sekret HMAC formularza zpmorfeusz.czest.pl - nie publikować\nreturn array('klucz' => '" . $nowy . "');\n", LOCK_EX) === false) continue;
         @chmod($tmp, 0600);
         @link($tmp, $p);
         @unlink($tmp);
@@ -146,15 +199,15 @@ function sekret() {
     odpowiedz(false, 500);
 }
 function siec_klienta() {
-    $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
-    $bin = @inet_pton($ip);
+    $ip = (string) wez($_SERVER, 'REMOTE_ADDR', '');
+    $bin = function_exists('inet_pton') ? @inet_pton($ip) : false;
     if ($bin !== false && strlen($bin) === 16) return bin2hex(substr($bin, 0, 8)) . '/64';
     return $ip;
 }
 function znacznik_podpis($t) { return hash_hmac('sha256', 'morfeusz-formularz|' . $t . '|' . siec_klienta(), sekret()); }
 function znacznik_wiek($z) {
     if (!is_string($z) || !preg_match('/^(\d{10})\.([0-9a-f]{64})$/', $z, $m)) return null;
-    if (!hash_equals(znacznik_podpis($m[1]), $m[2])) return null;
+    if (!rowne(znacznik_podpis($m[1]), $m[2])) return null;
     $wiek = time() - (int) $m[1];
     return $wiek < -5 ? null : max(0, $wiek);
 }
@@ -163,27 +216,27 @@ function znacznik_wiek($z) {
 if ($METODA === 'GET' && isset($_GET['znacznik'])) {
     header('Content-Type: application/json; charset=utf-8');
     $t = (string) time();
-    echo json_encode(['z' => $t . '.' . znacznik_podpis($t)]);
+    echo json_encode(array('z' => $t . '.' . znacznik_podpis($t)));
     exit;
 }
 if ($METODA !== 'POST') odpowiedz(false, 405);
-if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > MAX_ZADANIA) odpowiedz(false, 413);
+if ((int) wez($_SERVER, 'CONTENT_LENGTH', 0) > MAX_ZADANIA) odpowiedz(false, 413);
 
 // ------------------------------------------------------------------ 2. skąd przyszło (tylko Origin)
-$origin = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
+$origin = (string) wez($_SERVER, 'HTTP_ORIGIN', '');
 $okSkad = $origin === '' || preg_match(DOMENY, $origin) || ($DEV !== '' && preg_match('#^http://(localhost|127\.0\.0\.1)(:\d+)?(/|$)#', $origin));
-if (!$okSkad) odpowiedz(false, 403, ['blad' => 'origin']);
+if (!$okSkad) odpowiedz(false, 403, array('blad' => 'origin'));
 
 // ------------------------------------------------------------------ 3. znacznik czasu
-$wiek = znacznik_wiek($_POST['_z'] ?? null);
+$wiek = znacznik_wiek(wez($_POST, '_z'));
 $okZnacznik = $wiek !== null && $wiek >= ZNACZNIK_MIN && $wiek <= ZNACZNIK_MAX;
-if ($wiek !== null && $wiek < ZNACZNIK_MIN) odpowiedz(false, 403, ['blad' => 'szybko']);
-if (($JSON || $origin === '') && !$okZnacznik) odpowiedz(false, 403, ['blad' => 'znacznik']);
+if ($wiek !== null && $wiek < ZNACZNIK_MIN) odpowiedz(false, 403, array('blad' => 'szybko'));
+if (($JSON || $origin === '') && !$okZnacznik) odpowiedz(false, 403, array('blad' => 'znacznik'));
 
 $d = $_POST;
 if (!is_array($d) || !$d) odpowiedz(false, 400);
 // pułapka na boty - udajemy sukces
-if (!empty($d['_honey'])) odpowiedz(true, 200, ['potwierdzenie' => false]);
+if (!empty($d['_honey'])) odpowiedz(true, 200, array('potwierdzenie' => false));
 
 function pole($d, $k, $max = 200) {
     $v = isset($d[$k]) && is_string($d[$k]) ? trim($d[$k]) : '';
@@ -212,7 +265,7 @@ function katalog_limitow() {
     global $DEV;
     static $wybrany = false;
     if ($wybrany !== false) return $wybrany;
-    $kand = [];
+    $kand = array();
     $test = (string) getenv('MORFEUSZ_KATALOG_LIMITOW');
     if ($DEV !== '' && $test !== '') $kand[] = $test;
     $kand[] = dirname(__DIR__) . '/_limity';
@@ -231,7 +284,7 @@ function katalog_limitow() {
     dziennik('brak zapisywalnego katalogu na limity');
     return $wybrany = null;
 }
-function z_limitem($plik, callable $fn) {
+function z_limitem($plik, $fn) {
     $kat = katalog_limitow();
     if ($kat === null) return null;
     $sciezka = $kat . '/' . $plik;
@@ -240,7 +293,7 @@ function z_limitem($plik, callable $fn) {
     if ($u === false) { dziennik('nie można otworzyć pliku limitów ' . $plik); return null; }
     if (!flock($u, LOCK_EX)) { fclose($u); return null; }
     $dane = json_decode((string) stream_get_contents($u), true);
-    if (!is_array($dane)) $dane = [];
+    if (!is_array($dane)) $dane = array();
     $wynik = $fn($dane);
     $json = json_encode($dane);
     $ok = ftruncate($u, 0) && rewind($u) && fwrite($u, $json) === strlen($json) && fflush($u);
@@ -260,7 +313,7 @@ $wolnoIp = z_limitem($bezJs ? 'ip-bez-js.json' : 'ip.json', function (&$dane) us
         $dane[$k] = array_values(array_filter((array) $czasy, function ($t) use ($teraz) { return (int) $t > $teraz - OKNO; }));
         if (!$dane[$k]) unset($dane[$k]);
     }
-    if (count($dane[$skrotIp] ?? []) >= $limIp) return false;
+    if (count((array) wez($dane, $skrotIp, array())) >= $limIp) return false;
     $dane[$skrotIp][] = $teraz;
     return true;
 });
@@ -275,7 +328,7 @@ if ($skrotZ !== '') {
         $dane[$skrotZ] = $teraz;
         return true;
     });
-    if ($wolnyZ === false) odpowiedz(false, 403, ['blad' => 'znacznik']);
+    if ($wolnyZ === false) odpowiedz(false, 403, array('blad' => 'znacznik'));
 }
 function zwolnij_znacznik($skrotZ) {
     if ($skrotZ !== '') z_limitem('zuzyte.json', function (&$dane) use ($skrotZ) { unset($dane[$skrotZ]); return true; });
@@ -287,13 +340,13 @@ $wolnoGlob = z_limitem('globalny.json', function (&$dane) use ($teraz) {
     $dane[] = $teraz;
     return true;
 });
-if ($wolnoGlob === false) { dziennik('łączny limit powiadomień przekroczony'); zwolnij_znacznik($skrotZ); odpowiedz(false, 429, ['blad' => 'globalny']); }
+if ($wolnoGlob === false) { dziennik('łączny limit powiadomień przekroczony'); zwolnij_znacznik($skrotZ); odpowiedz(false, 429, array('blad' => 'globalny')); }
 
 // ------------------------------------------------------------------ MIME
 const NL = "\r\n";
 function zakoduj($s) {                         // nagłówek UTF-8 (RFC 2047)
     if (!preg_match('/[^\x20-\x7E]/', $s)) return $s;
-    $out = []; $kaw = '';
+    $out = array(); $kaw = '';
     foreach (preg_split('//u', $s, -1, PREG_SPLIT_NO_EMPTY) as $z) {
         if (strlen($kaw . $z) > 45) { $out[] = '=?UTF-8?B?' . base64_encode($kaw) . '?='; $kaw = ''; }
         $kaw .= $z;
@@ -303,20 +356,20 @@ function zakoduj($s) {                         // nagłówek UTF-8 (RFC 2047)
 }
 function b64($s) { return rtrim(chunk_split(base64_encode($s), 76, NL)) . NL; }
 function alternatywa($tekst, $html) {
-    $g = '=_mf_' . bin2hex(random_bytes(10));
-    return ['Content-Type: multipart/alternative; boundary="' . $g . '"',
+    $g = '=_mf_' . bin2hex(losowe(10));
+    return array('Content-Type: multipart/alternative; boundary="' . $g . '"',
         '--' . $g . NL . 'Content-Type: text/plain; charset=UTF-8' . NL . 'Content-Transfer-Encoding: base64' . NL . NL . b64($tekst)
         . '--' . $g . NL . 'Content-Type: text/html; charset=UTF-8' . NL . 'Content-Transfer-Encoding: base64' . NL . NL . b64($html)
-        . '--' . $g . '--' . NL];
+        . '--' . $g . '--' . NL);
 }
 function wyslij($do, $temat, $naglowki, $glowny, $nazwa = NADAWCA_NAZWA) {
     global $DEV;
-    $nag = array_merge([
+    $nag = array_merge(array(
         'From: ' . zakoduj($nazwa) . ' <' . NADAWCA . '>',
         'Date: ' . date('r'),
-        'Message-ID: <' . bin2hex(random_bytes(12)) . '@zpmorfeusz.czest.pl>',
+        'Message-ID: <' . bin2hex(losowe(12)) . '@zpmorfeusz.czest.pl>',
         'MIME-Version: 1.0',
-    ], $naglowki, [$glowny[0]]);
+    ), $naglowki, array($glowny[0]));
     $tematZak = zakoduj($temat);
     if ($DEV !== '') {                         // tylko lokalnie: zapis .eml zamiast wysyłki
         if (!is_dir($DEV)) @mkdir($DEV, 0777, true);
@@ -335,9 +388,9 @@ if ($okMail) {
     } else {
         $skrotMail = skrot(strtolower($email));
         $wynik = z_limitem('potwierdzenia.json', function (&$dane) use ($teraz, $skrotMail) {
-            $g = array_values(array_filter((array) ($dane['g'] ?? []), function ($t) use ($teraz) { return (int) $t > $teraz - 3600; }));
-            $a = array_filter((array) ($dane['a'] ?? []), function ($t) use ($teraz) { return (int) $t > $teraz - POTW_NA_ADRES; });
-            $dane = ['g' => $g, 'a' => $a];
+            $g = array_values(array_filter((array) wez($dane, 'g', array()), function ($t) use ($teraz) { return (int) $t > $teraz - 3600; }));
+            $a = array_filter((array) wez($dane, 'a', array()), function ($t) use ($teraz) { return (int) $t > $teraz - POTW_NA_ADRES; });
+            $dane = array('g' => $g, 'a' => $a);
             if (isset($a[$skrotMail])) return 'adres';
             if (count($g) >= LIMIT_POTWIERDZEN) return 'godzina';
             $dane['g'][] = $teraz;
@@ -354,12 +407,12 @@ if ($okMail) {
 $kiedy = date('d.m.Y, H:i');
 $nrTel = $okTel ? preg_replace('/[^\d+]/', '', $telefon) : '';
 $brak = '<span style="color:#6b6573;font-weight:normal">nie podano</span>';
-$wiersze = [
+$wiersze = array(
     'Imię i nazwisko' => h($imie),
     'Telefon' => $okTel ? '<a href="tel:' . h($nrTel) . '" style="color:#2b2733">' . h($telefon) . '</a>' : $brak,
     'E-mail' => $okMail ? '<a href="mailto:' . h($email) . '" style="color:#37314a">' . h($email) . '</a>' : $brak,
     'Wiadomość' => '<span style="font-weight:normal">' . nl2br(h($tresc)) . '</span>',
-];
+);
 $tab = '';
 foreach ($wiersze as $k => $v) {
     $tab .= '<tr><td style="padding:12px 24px;border-bottom:1px solid #e9e5dd;font-family:Arial,Helvetica,sans-serif">'
@@ -377,7 +430,7 @@ $htmlZ = '<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name=
     . '</table></td></tr></table></body></html>';
 $tekstZ = "Wiadomość ze strony zpmorfeusz.czest.pl\n\nImię i nazwisko: $imie\nTelefon: " . ($telefon ?: 'nie podano') . "\nE-mail: " . ($email ?: 'nie podano')
     . "\nWiadomość:\n$tresc\n\nWysłano: $kiedy\nZ podstrony: " . ($skad ?: '/kontakt/') . "\nPotwierdzenie do nadawcy: $powodPotw\n";
-$nagZ = [];
+$nagZ = array();
 if ($okMail) $nagZ[] = 'Reply-To: ' . $email;
 if (!wyslij(ODBIORCA, 'Wiadomość ze strony zakładu Morfeusz: ' . $imie, $nagZ, alternatywa($tekstZ, $htmlZ), 'Formularz strony Morfeusz')) {
     dziennik('mail() do odbiorcy zwrócił false');
@@ -389,11 +442,11 @@ if (!wyslij(ODBIORCA, 'Wiadomość ze strony zakładu Morfeusz: ' . $imie, $nagZ
 // nie zawiera niczego, co wpisał nadawca - formularz nie nadaje się do wysyłania treści na cudze adresy
 $potwierdzenie = false;
 if ($wyslijPotw) {
-    $akapity = [
+    $akapity = array(
         'Dzień dobry,',
         'dziękujemy za wiadomość - dotarła do Zakładu Pogrzebowego MORFEUSZ. Odpowiemy najszybciej, jak to możliwe.',
         'W pilnej sprawie prosimy dzwonić - telefon całodobowy ' . TELEFON . '.',
-    ];
+    );
     $p = 'margin:0 0 16px';
     $htmlK = '<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dziękujemy za wiadomość</title></head>'
         . '<body style="margin:0;padding:16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#222222;background:#ffffff"><div style="max-width:600px">';
@@ -404,8 +457,8 @@ if ($wyslijPotw) {
         . '</div></body></html>';
     $tekstK = implode("\n\n", $akapity) . "\n\nZakład Pogrzebowy MORFEUSZ\nul. Górna 30, 42-263 Wrzosowa\n" . TELEFON . " (całą dobę)\nzpmorfeusz.czest.pl\n\n"
         . "Ta wiadomość została wysłana automatycznie po wypełnieniu formularza na stronie zpmorfeusz.czest.pl.\n";
-    $potwierdzenie = wyslij($email, 'Dziękujemy za wiadomość - Zakład Pogrzebowy MORFEUSZ', ['Reply-To: ' . ODBIORCA, 'Auto-Submitted: auto-replied'], alternatywa($tekstK, $htmlK));
+    $potwierdzenie = wyslij($email, 'Dziękujemy za wiadomość - Zakład Pogrzebowy MORFEUSZ', array('Reply-To: ' . ODBIORCA, 'Auto-Submitted: auto-replied'), alternatywa($tekstK, $htmlK));
     if (!$potwierdzenie) dziennik('mail() z potwierdzeniem zwrócił false');
 }
 
-odpowiedz(true, 200, ['potwierdzenie' => $potwierdzenie]);
+odpowiedz(true, 200, array('potwierdzenie' => $potwierdzenie));
