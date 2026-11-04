@@ -123,7 +123,7 @@ a.kafel:hover h3{text-decoration:underline;text-underline-offset:5px;text-decora
 .zaklad{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:56px;align-items:center}
 .zaklad-tx p{margin-top:14px;color:var(--ink2)}
 .zaklad-foto{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
-.zaklad-foto figure{margin:0;border-radius:6px;overflow:hidden;aspect-ratio:4/4.4;background:#d9d4dd}
+.zaklad-foto figure{margin:0;border-radius:6px;overflow:hidden;aspect-ratio:3/4;background:#d9d4dd}
 .zaklad-foto img{width:100%;height:100%;object-fit:cover}
 .zaklad-foto .fot-lewo img,.ph-foto.fot-lewo img{object-position:12% 50%}
 
@@ -193,6 +193,11 @@ a.kafel:hover h3{text-decoration:underline;text-underline-offset:5px;text-decora
 .gal a{display:block;border-radius:6px;overflow:hidden;background:#d9d4dd;aspect-ratio:4/3.4}
 .gal img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
 .gal a:hover img{transform:scale(1.02)}
+/* 04.11: zdjecie w calosci (object-fit:contain) na rozmytym tle z tego samego zdjecia */
+.ph-foto,.kafel-foto,.usl-foto,.gal a{position:relative}
+img.foto-tlo.foto-tlo{position:absolute;left:-24px;top:-24px;width:calc(100% + 48px);height:calc(100% + 48px);max-width:none;object-fit:cover;filter:blur(18px) brightness(.7) saturate(.85);transform:none;transition:none}
+img.caly.caly{position:relative;object-fit:contain}
+@media (max-width:760px){.kafel-foto:has(.caly),.ph-foto:has(.caly){aspect-ratio:4/3}.usl-foto:has(.caly){aspect-ratio:1/1}}
 .gal figcaption{margin-top:8px;font-size:16px;color:var(--ink2)}
 
 /* formularz */

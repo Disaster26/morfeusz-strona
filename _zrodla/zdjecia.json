@@ -26,21 +26,21 @@
    1440
   ]
  ],
- "kaplica-ceremonia": [
+ "oprawa-kaplica": [
   [
-   "kaplica-ceremonia-480.webp",
+   "oprawa-kaplica-480.webp",
    480,
-   495
+   820
   ],
   [
-   "kaplica-ceremonia-800.webp",
+   "oprawa-kaplica-800.webp",
    800,
-   826
+   1366
   ],
   [
-   "kaplica-ceremonia-1200.webp",
+   "oprawa-kaplica-1200.webp",
    1200,
-   1238
+   2050
   ]
  ],
  "kaplica": [
@@ -94,21 +94,21 @@
    1600
   ]
  ],
- "grob-namiot": [
+ "grob-bez-drabiny": [
   [
-   "grob-namiot-480.webp",
+   "grob-bez-drabiny-480.webp",
    480,
-   932
+   769
   ],
   [
-   "grob-namiot-800.webp",
+   "grob-bez-drabiny-800.webp",
    800,
-   1553
+   1282
   ],
   [
-   "grob-namiot-1200.webp",
+   "grob-bez-drabiny-1200.webp",
    1200,
-   2330
+   1923
   ]
  ],
  "pogrzeb-urnowy": [
@@ -145,6 +145,40 @@
    1373
   ]
  ],
+ "regal-urny": [
+  [
+   "regal-urny-480.webp",
+   480,
+   349
+  ],
+  [
+   "regal-urny-800.webp",
+   800,
+   581
+  ],
+  [
+   "regal-urny-1200.webp",
+   1200,
+   872
+  ]
+ ],
+ "karawany-trzy": [
+  [
+   "karawany-trzy-480.webp",
+   480,
+   367
+  ],
+  [
+   "karawany-trzy-800.webp",
+   800,
+   612
+  ],
+  [
+   "karawany-trzy-1200.webp",
+   1200,
+   919
+  ]
+ ],
  "biuro": [
   [
    "biuro-480.webp",
@@ -179,18 +213,6 @@
    "karawan-900.webp",
    900,
    641
-  ]
- ],
- "karawany-kosciol": [
-  [
-   "karawany-kosciol-480.webp",
-   480,
-   252
-  ],
-  [
-   "karawany-kosciol-1200.webp",
-   1200,
-   630
   ]
  ],
  "siedziba": [

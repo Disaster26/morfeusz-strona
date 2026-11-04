@@ -16,7 +16,7 @@ INFO = json.load(open(os.path.join(os.path.dirname(__file__), 'zdjecia.json'), e
 DOMENA = 'https://zpmorfeusz.czest.pl'
 FORM_ADRES = 'https://formsubmit.co/ajax/' + ('zpmorfeusz@onet.eu' if PROD else 'stasiu2626@gmail.com')
 BASE_404 = '/' if PROD else '/morfeusz-strona/'
-WERSJA = '5'
+WERSJA = '6'
 
 TEL = ('601 460 964', 'tel:+48601460964')
 TEL_STACJ = ('34 327 51 06', 'tel:+48343275106')
@@ -33,16 +33,29 @@ def e(s):
     return html.escape(s, quote=True)
 
 
-def img(name, alt, sizes, R, eager=False, cls=''):
+# 04.11: zdjecia pionowe w poziomych ramkach pokazujemy w calosci (bez ucinania) na rozmytym tle z tego samego zdjecia
+CALY = {'kaplica', 'oprawa-kaplica', 'grob-bez-drabiny'}
+POZYCJA = {'karawany-trzy': '50% 58%', 'regal-urny': '50% 30%'}
+
+
+def img(name, alt, sizes, R, eager=False, cls='', caly=None):
     v = INFO[name]
+    if caly is None:
+        caly = name in CALY
+    if caly:
+        cls = (cls + ' caly').strip()
     srcset = ', '.join(f'{R}img/{fn} {w}w' for fn, w, h in v)
     mid = [x for x in v if x[1] <= 800] or v[:1]
     fn, w, h = mid[-1]
     W, H = v[-1][1], v[-1][2]
     load = 'fetchpriority="high"' if eager else 'loading="lazy"'
     c = f' class="{cls}"' if cls else ''
-    return (f'<img{c} src="{R}img/{fn}" srcset="{srcset}" sizes="{sizes}" alt="{e(alt)}" '
-            f'width="{W}" height="{H}" {load} decoding="async">')
+    st = f' style="object-position:{POZYCJA[name]}"' if name in POZYCJA else ''
+    lz = '' if eager else 'loading="lazy" '
+    tlo = (f'<img class="foto-tlo" src="{R}img/{v[0][0]}" alt="" aria-hidden="true" width="{v[0][1]}" height="{v[0][2]}" '
+           f'{lz}decoding="async">') if caly else ''
+    return (f'{tlo}<img{c} src="{R}img/{fn}" srcset="{srcset}" sizes="{sizes}" alt="{e(alt)}" '
+            f'width="{W}" height="{H}" {load} decoding="async"{st}>')
 
 
 def najwiekszy(name):
@@ -243,11 +256,11 @@ def glowna():
     kafle = [
         ('organizacja', 'biuro', 'Biuro obsługi klienta w zakładzie', 'Organizacja pogrzebu', ['Kompleksowa organizacja pogrzebu', 'Bezgotówkowa organizacja pogrzebów', 'Pomoc w formalnościach']),
         ('kremacje', 'stojak-urna', 'Stojak na urnę z bordowym aksamitem i świecami na cmentarzu', 'Kremacje', ['Organizacja kremacji', 'Sprzedaż urn', 'Nagrobki urnowe']),
-        ('trumny-urny', 'urny', 'Urny na półkach w zakładzie', 'Trumny, urny, ubrania', ['Sprzedaż trumien i urn', 'Ubrania dla zmarłych']),
-        ('transport', 'karawan', 'Karawan zakładu Morfeusz', 'Transport', ['Krajowy i międzynarodowy transport zwłok', 'Karawany i autokary', 'Własna chłodnia']),
+        ('trumny-urny', 'regal-urny', 'Regał z urnami w zakładzie', 'Trumny, urny, ubrania', ['Sprzedaż trumien i urn', 'Ubrania dla zmarłych']),
+        ('transport', 'karawany-trzy', 'Trzy karawany zakładu Morfeusz przed kościołem', 'Transport', ['Krajowy i międzynarodowy transport zwłok', 'Karawany i autokary', 'Własna chłodnia']),
         ('ubieranie', None, '', 'Ubieranie i kosmetyka', 'Ubieranie i kosmetyka osób zmarłych - z szacunkiem, według życzeń rodziny.'),
-        ('oprawa', 'kaplica-ceremonia', 'Kaplica z trumną i kwiatami przed ceremonią', 'Oprawa ceremonii', ['Oprawa muzyczna: trąbka, skrzypce, orkiestra, organista', 'Wieńce i wiązanki', 'Dekoracje żałobne mieszkań']),
-        ('cmentarz', 'grob-namiot', 'Namiot zakładu nad grobem przygotowanym do pochówku', 'Usługi grabarskie', 'Usługi grabarskie na cmentarzu we Wrzosowej: przygotowanie grobu i obsługa ceremonii.'),
+        ('oprawa', 'oprawa-kaplica', 'Kaplica z trumną i wiązanką przed ceremonią', 'Oprawa ceremonii', ['Oprawa muzyczna: trąbka, skrzypce, orkiestra, organista', 'Wieńce i wiązanki', 'Dekoracje żałobne mieszkań']),
+        ('cmentarz', 'grob-bez-drabiny', 'Namiot zakładu nad grobem przygotowanym do pochówku', 'Usługi grabarskie', 'Usługi grabarskie na cmentarzu we Wrzosowej: przygotowanie grobu i obsługa ceremonii.'),
         ('kamieniarstwo', None, '', 'Kamieniarstwo', ['Pomniki i nagrobki', 'Nagrobki urnowe', 'Liternictwo i zdjęcia na pomnikach', 'Poziomowanie i naprawa pomników']),
     ]
     k = ''
@@ -329,7 +342,7 @@ def glowna():
     </div>
     <div class="zaklad-foto">
       <figure class="fot-lewo">{img('siedziba', 'Budynek Zakładu Pogrzebowego Morfeusz przy ul. Górnej 30', '(max-width:760px) 50vw, 330px', R)}</figure>
-      <figure>{img('kaplica', 'Kaplica przy zakładzie z krzyżem na czerwonej ścianie', '(max-width:760px) 50vw, 330px', R)}</figure>
+      <figure>{img('kaplica', 'Kaplica przy zakładzie z krzyżem na czerwonej ścianie', '(max-width:760px) 50vw, 330px', R, caly=False)}</figure>
     </div>
   </div>
 </section>
@@ -359,19 +372,19 @@ def oferta():
         ('kremacje', 'Kremacje', 'stojak-urna', 'Stojak na urnę z bordowym aksamitem i świecami przy grobie',
          ['Organizujemy pogrzeby z kremacją: przewóz zmarłego do krematorium, wybór urny i pogrzeb urnowy na cmentarzu.'],
          ['Organizacja kremacji', 'Sprzedaż urn', 'Pogrzeb urnowy z oprawą na cmentarzu', 'Nagrobki urnowe'], None),
-        ('trumny-urny', 'Trumny, urny i ubrania', 'urny', 'Urny na półkach w zakładzie',
+        ('trumny-urny', 'Trumny, urny i ubrania', 'regal-urny', 'Regał z urnami w zakładzie',
          ['W zakładzie można wybrać trumnę lub urnę oraz ubranie dla zmarłego. Pomożemy dobrać je do rodzaju pogrzebu i życzeń rodziny.'],
          ['Sprzedaż trumien', 'Sprzedaż urn', 'Ubrania dla zmarłych'], None),
         ('ubieranie', 'Ubieranie i kosmetyka zmarłych', None, '',
          ['Przygotowanie zmarłego do pożegnania wykonujemy z szacunkiem i według życzeń rodziny. Można przynieść własne ubranie zmarłego albo wybrać je w zakładzie.'],
          ['Ubieranie osób zmarłych', 'Kosmetyka osób zmarłych', 'Ubrania dla zmarłych'], None),
-        ('transport', 'Transport zmarłych i własna chłodnia', 'karawan', 'Karawan zakładu Morfeusz',
+        ('transport', 'Transport zmarłych i własna chłodnia', 'karawany-trzy', 'Trzy karawany zakładu Morfeusz przed kościołem',
          ['Przewozimy zmarłych własnymi karawanami do naszej chłodni, a w dniu pogrzebu na ceremonię. Wykonujemy też transport zmarłych na terenie całego kraju i za granicę.'],
          ['Karawany', 'Krajowy i międzynarodowy transport zwłok', 'Własna chłodnia', 'Autokary dla uczestników pogrzebu'], None),
-        ('oprawa', 'Oprawa ceremonii', 'kaplica-ceremonia', 'Kaplica z trumną i kwiatami przed ceremonią',
+        ('oprawa', 'Oprawa ceremonii', 'oprawa-kaplica', 'Kaplica z trumną i wiązanką przed ceremonią',
          ['Na życzenie rodziny zapewniamy oprawę muzyczną, kwiaty i dekoracje. Pożegnanie może odbyć się w naszej kaplicy.'],
          ['Oprawa muzyczna: trąbka, skrzypce, orkiestra, organista', 'Wieńce i wiązanki', 'Dekoracje żałobne mieszkań'], None),
-        ('cmentarz', 'Usługi grabarskie', 'grob-namiot', 'Namiot zakładu nad grobem wyłożonym zieloną matą',
+        ('cmentarz', 'Usługi grabarskie', 'grob-bez-drabiny', 'Namiot zakładu nad grobem wyłożonym zieloną matą',
          ['Wykonujemy usługi grabarskie na cmentarzu we Wrzosowej. Przygotowujemy grób do pochówku i obsługujemy ceremonię na cmentarzu. Przy grobie rozstawiamy namiot z zasłonami, a teren wokół wykładamy matą.'],
          ['Usługi grabarskie na cmentarzu we Wrzosowej', 'Namiot z zasłonami przy grobie', 'Obsługa pogrzebu tradycyjnego i urnowego'], None),
         ('kamieniarstwo', 'Kamieniarstwo i liternictwo', None, '',
@@ -491,15 +504,15 @@ def galeria():
     S = '(max-width:380px) 100vw, (max-width:900px) 50vw, 380px'
     grupy = [
         ('Siedziba i biuro', 'W biurze zakładu przy ul. Górnej 30 ustalamy szczegóły pogrzebu, można też wybrać urnę i trumnę.', [
-            ('biuro', 'Biuro obsługi'), ('urny', 'Urny w zakładzie')]),
+            ('biuro', 'Biuro obsługi'), ('regal-urny', 'Urny w zakładzie')]),
         ('Kaplica', 'Przy zakładzie jest kaplica, w której rodzina może pożegnać zmarłego przed pogrzebem.', [
-            ('kaplica', 'Kaplica przy zakładzie'), ('kaplica-ceremonia', 'Kaplica przed pożegnaniem')]),
+            ('kaplica', 'Kaplica przy zakładzie'), ('oprawa-kaplica', 'Kaplica przed pożegnaniem')]),
         ('Ceremonia', 'Przygotowujemy oprawę ceremonii w kościele: urnę lub trumnę na katafalku, świece, wieńce i wiązanki.', [
             ('ceremonia-kosciol', 'Oprawa ceremonii w kościele')]),
         ('Chłodnia i transport', 'Własna chłodnia i karawany pozwalają nam zająć się zmarłym od razu, o każdej porze.', [
-            ('chlodnia', 'Własna chłodnia'), ('karawan', 'Karawan zakładu'), ('karawany-kosciol', 'Karawany przed kościołem')]),
+            ('chlodnia', 'Własna chłodnia'), ('karawan', 'Karawan zakładu'), ('karawany-trzy', 'Karawany przed kościołem')]),
         ('Na cmentarzu', 'Przy grobie rozstawiamy namiot z zasłonami, teren wokół wykładamy matą, a przy pogrzebie urnowym przygotowujemy stojak na urnę.', [
-            ('namiot-cmentarz', 'Namiot zakładu w alei cmentarza'), ('grob-namiot', 'Grób przygotowany do pochówku'),
+            ('namiot-cmentarz', 'Namiot zakładu w alei cmentarza'), ('grob-bez-drabiny', 'Grób przygotowany do pochówku'),
             ('stojak-urna', 'Stojak na urnę ze świecami'), ('pogrzeb-urnowy', 'Przygotowanie do pogrzebu urnowego'),
             ('namiot-zima', 'Namiot przy pogrzebie urnowym'), ('urna-grob', 'Urna z wiązanką róż')]),
     ]
