@@ -389,3 +389,11 @@ html.lb-otw{overflow:hidden}
   .lb-img{max-height:calc(100% - 52px)}
   .lb-opis{font-size:15px;padding:0 8px}
 }
+/* 04.11d: wyroznienie Elitarny Lider Jakosci 2026 - stonowana plakietka z miniatura certyfikatu */
+.wyr{display:flex;align-items:center;gap:16px;margin-top:22px;padding:14px 16px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.wyr-foto{flex:0 0 96px;margin:0;border-radius:3px;overflow:hidden;cursor:zoom-in}
+.wyr-foto img{width:100%;height:auto}
+.wyr p{margin:0;font-size:15px;line-height:1.45;color:var(--ink2)}
+.wyr strong{display:block;color:var(--main);font-weight:600;font-size:16px}
+.wyr span{display:block}
+@media (max-width:380px){.wyr-foto{flex-basis:80px}}

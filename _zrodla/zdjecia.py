@@ -30,9 +30,13 @@ OPIS={
  'grob-bez-drabiny':'Grób przygotowany do pochówku z namiotem zakładu MORFEUSZ',
  'pogrzeb-urnowy':'Przygotowanie do pogrzebu urnowego - Zakład Pogrzebowy MORFEUSZ',
  'ceremonia-kosciol':'Oprawa ceremonii pogrzebowej w kościele - Zakład Pogrzebowy MORFEUSZ',
- 'urny-zaklad-wrzosowa':'Urny w Zakładzie Pogrzebowym MORFEUSZ we Wrzosowej',
+ 'regal-urny-morfeusz':'Regał z urnami w Zakładzie Pogrzebowym MORFEUSZ we Wrzosowej',
  'karawany-morfeusz':'Trzy karawany Zakładu Pogrzebowego MORFEUSZ przed kościołem',
- 'biuro':'Biuro obsługi klienta Zakładu Pogrzebowego MORFEUSZ we Wrzosowej',
+ 'biuro-morfeusz-wrzosowa':'Biuro obsługi klienta Zakładu Pogrzebowego MORFEUSZ we Wrzosowej',
+ 'biuro-sofa-urny':'Biuro Zakładu Pogrzebowego MORFEUSZ we Wrzosowej - sofa dla rodzin i półki z urnami',
+ 'biuro-kacik-las':'Kącik do rozmowy z rodziną i regał z urnami w biurze zakładu MORFEUSZ we Wrzosowej',
+ 'certyfikat-elitarny-lider-2026':'Certyfikat Elitarny Lider Jakości 2026 dla Zakładu Pogrzebowego MORFEUSZ - 1. miejsce w powiecie częstochowskim w branży funeralnej',
+ 'statuetka-elitarny-lider-2026':'Statuetka Elitarny Lider Jakości 2026 w Zakładzie Pogrzebowym MORFEUSZ we Wrzosowej',
  'urny':'Urny w Zakładzie Pogrzebowym MORFEUSZ',
  'karawan':'Karawan Zakładu Pogrzebowego MORFEUSZ',
  'siedziba':'Siedziba Zakładu Pogrzebowego MORFEUSZ, ul. Górna 30, Wrzosowa',
@@ -81,12 +85,16 @@ im=otworz('20250109_101525.jpg'); k=im.width/900; im=im.crop((int(232*k),0,im.wi
 # 04.11: zdjecia ze starej strony (oryginaly w pelnej rozdzielczosci)
 STARA=r"C:\Users\Admin\Downloads\Morfeusz_kopia_starej_strony_20261102_1340\wp-content\uploads"
 ORIG=r"C:\Users\Admin\Downloads\Morfeusz_koncept\_src\orig"
-# regal z urnami (ok. 20 szt.), tabliczki z nazwiskami rozmyte
-im=ImageOps.exif_transpose(Image.open(os.path.join(STARA,'2016','03','20150915_233720.jpg'))).convert('RGB')
-# 04.11b: user - bez dolnego pasa (tabliczki, znak zakazu palenia, grzejnik): obrot -1.6 st. (polka pozioma) i kadr tuz pod druga polka
-im=im.rotate(-1.6,resample=Image.BICUBIC)
-blur(im,1000,[(858,350,1000,478)],r=38)  # tabliczka za urna-sercem po prawej
-k=im.width/1000; im=im.crop((int(20*k),int(40*k),int(940*k),int(546*k))); zapisz(im,'urny-zaklad-wrzosowa',[480,800,1200],q=62)
+# 04.11d: nowe zdjecie regalu z urnami od klienta (30.10) zamiast starego urny-zaklad-wrzosowa (stary kadr w historii git)
+# obrobka w regal_urny.py: korekta perspektywy, kadr do regalu, lekka korekta tonow i wyostrzenie; pelna rozdzielczosc obok oryginalu
+from regal_urny import regal_urny
+im=regal_urny(); im.save(r"C:\Users\Admin\Downloads\Odrobimy_kampania\klienci\Morfeusz\zdjecia_klienta_0411\regal-urny-morfeusz_obrobione.jpg",quality=93)
+zapisz(im,'regal-urny-morfeusz',[480,800,1200],q=64)
+# 04.11d: aktualne zdjecia biura od klienta (04.11) zamiast starego zdjecia biura z archiwum; obrobka w biuro.py
+import biuro
+for n,fn in biuro.WSZYSTKIE:
+    im=fn(); im.save(os.path.join(biuro.PELNE,n+'_obrobione.jpg'),quality=92)
+    zapisz(im,n,[480,800,1200],q=64)
 # trzy karawany przed kosciolem: znak wodny aparatu usuniety (inpaint), osoby w szybie i w tle rozmyte
 import numpy as np, cv2
 im=ImageOps.exif_transpose(Image.open(os.path.join(ORIG,'20240611_1341351.jpg'))).convert('RGB')
@@ -105,6 +113,6 @@ im=Image.fromarray(a)
 blur(im,1000,[(120,295,285,358),(28,283,78,342),(858,300,902,336)],r=30)
 im=im.crop((0,0,int(960*k),int(735*k))); zapisz(im,'karawany-morfeusz',[480,800,1200],q=62)
 # z archiwum (wizualizacja, juz rozmyte)
-for f,n in [('biuro','biuro'),('urny','urny'),('karawan','karawan'),('siedziba','siedziba'),('wieniec','wieniec'),('urna-grob','urna-grob'),('namiot','namiot-zima'),('hero-pion','namiot-zima-2')]:
+for f,n in [('urny','urny'),('karawan','karawan'),('siedziba','siedziba'),('wieniec','wieniec'),('urna-grob','urna-grob'),('namiot','namiot-zima'),('hero-pion','namiot-zima-2')]:
     im=Image.open(os.path.join(KON,f+'.webp')); zapisz(im,n,[480,im.width] if im.width>560 else [im.width])
 json.dump(info,open(os.path.join(os.path.dirname(os.path.abspath(__file__)),"zdjecia.json"),"w"),indent=1)

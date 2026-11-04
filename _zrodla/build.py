@@ -18,7 +18,7 @@ DOMENA = 'https://zpmorfeusz.czest.pl'
 # wtedy strona pokazuje komunikat z telefonem
 FORM_ADRES = '../wyslij.php'
 BASE_404 = '/' if PROD else '/morfeusz-strona/'
-WERSJA = '7'
+WERSJA = '8'
 DZIS = '2026-11-04'  # lastmod w sitemap.xml
 
 TEL = ('601 460 964', 'tel:+48601460964')
@@ -46,8 +46,8 @@ def e(s):
 
 
 # 04.11: zdjecia pionowe w poziomych ramkach pokazujemy w calosci (bez ucinania) na rozmytym tle z tego samego zdjecia
-CALY = {'kaplica', 'oprawa-kaplica', 'grob-bez-drabiny'}
-POZYCJA = {'karawany-morfeusz': '50% 58%', 'urny-zaklad-wrzosowa': '50% 30%'}
+CALY = {'kaplica', 'oprawa-kaplica', 'grob-bez-drabiny', 'regal-urny-morfeusz', 'biuro-kacik-las', 'statuetka-elitarny-lider-2026'}
+POZYCJA = {'karawany-morfeusz': '50% 58%'}
 
 
 def img(name, alt, sizes, R, eager=False, cls='', caly=None):
@@ -68,6 +68,23 @@ def img(name, alt, sizes, R, eager=False, cls='', caly=None):
            f'{lz}decoding="async">') if caly else ''
     return (f'{tlo}<img{c} src="{R}img/{fn}" srcset="{srcset}" sizes="{sizes}" alt="{e(alt)}" '
             f'width="{W}" height="{H}" {load} decoding="async"{st}>')
+
+
+# 04.11d: wyroznienie wg certyfikatu (organizator / kapitula programu: BellaMark)
+WYR_TYTUL = 'Elitarny Lider Jakości 2026'
+WYR_TEKST = '1. miejsce dla najlepszej firmy w powiecie częstochowskim w branży funeralnej na rok 2026'
+WYR_AWARD = f'{WYR_TYTUL} - {WYR_TEKST} (program BellaMark)'
+WYR_OPIS = (f'W 2026 roku zakład otrzymał wyróżnienie „{WYR_TYTUL}” - {WYR_TEKST}. '
+            'Certyfikat przyznała kapituła programu BellaMark.')
+
+
+def wyroznienie(R):
+    # stonowana plakietka: miniatura certyfikatu (powieksza sie w lightboxie) + jedna linia tekstu
+    alt = 'Certyfikat Elitarny Lider Jakości 2026 dla Zakładu Pogrzebowego MORFEUSZ we Wrzosowej'
+    return (f'      <div class="wyr">\n'
+            f'        <figure class="wyr-foto">{img("certyfikat-elitarny-lider-2026", alt, "120px", R)}</figure>\n'
+            f'        <p><strong>Wyróżnienie „{WYR_TYTUL}”</strong><span>{WYR_TEKST}. Program BellaMark.</span></p>\n'
+            f'      </div>')
 
 
 def najwiekszy(name):
@@ -95,6 +112,7 @@ def schema_firma():
         'email': MAIL,
         'taxID': '5731706929',
         'foundingDate': '1997',
+        'award': WYR_AWARD,
         'address': {'@type': 'PostalAddress', 'streetAddress': 'ul. Górna 30', 'postalCode': '42-263',
                     'addressLocality': 'Wrzosowa', 'addressRegion': 'śląskie', 'addressCountry': 'PL'},
         'geo': {'@type': 'GeoCoordinates', 'latitude': LAT, 'longitude': LON},
@@ -285,9 +303,9 @@ def glowna():
     R = ''
     S_KAFEL = '(max-width:760px) 100vw, (max-width:1180px) 42vw, 280px'
     kafle = [
-        ('organizacja', 'biuro', 'Biuro obsługi klienta w Zakładzie Pogrzebowym Morfeusz we Wrzosowej', 'Organizacja pogrzebu', ['Kompleksowa organizacja pogrzebu', 'Bezgotówkowa organizacja pogrzebów', 'Pomoc w formalnościach']),
+        ('organizacja', 'biuro-morfeusz-wrzosowa', 'Biuro obsługi klienta w Zakładzie Pogrzebowym MORFEUSZ we Wrzosowej', 'Organizacja pogrzebu', ['Kompleksowa organizacja pogrzebu', 'Bezgotówkowa organizacja pogrzebów', 'Pomoc w formalnościach']),
         ('kremacje', 'stojak-urna', 'Stojak na urnę z bordowym aksamitem i świecami na cmentarzu', 'Kremacje', ['Organizacja kremacji', 'Sprzedaż urn', 'Nagrobki urnowe']),
-        ('trumny-urny', 'urny-zaklad-wrzosowa', 'Regał z urnami w zakładzie pogrzebowym we Wrzosowej', 'Trumny, urny, ubrania', ['Sprzedaż trumien i urn', 'Ubrania dla zmarłych']),
+        ('trumny-urny', 'regal-urny-morfeusz', 'Regał z urnami w Zakładzie Pogrzebowym MORFEUSZ we Wrzosowej', 'Trumny, urny, ubrania', ['Sprzedaż trumien i urn', 'Ubrania dla zmarłych']),
         ('transport', 'karawany-morfeusz', 'Trzy karawany zakładu Morfeusz przed kościołem', 'Transport', ['Krajowy i międzynarodowy transport zwłok', 'Karawany i autokary', 'Własna chłodnia']),
         ('ubieranie', None, '', 'Ubieranie i kosmetyka', 'Ubieranie i kosmetyka osób zmarłych - z szacunkiem, według życzeń rodziny.'),
         ('oprawa', 'oprawa-kaplica', 'Kaplica zakładu we Wrzosowej z trumną i wiązanką przed ceremonią', 'Oprawa ceremonii', ['Oprawa muzyczna: trąbka, skrzypce, orkiestra, organista', 'Wieńce i wiązanki', 'Dekoracje żałobne mieszkań']),
@@ -369,6 +387,7 @@ def glowna():
       <p>Działamy od 1997 roku. Zakład mieści się przy ul. Górnej 30 we Wrzosowej, w gminie Poczesna pod Częstochową. Mamy własną kaplicę, własną chłodnię oraz karawany, którymi przewozimy zmarłych w kraju i za granicę.</p>
       <p>Ceremonie obsługują stosownie ubrani, przeszkoleni pracownicy. Na cmentarzu rozstawiamy namiot z zasłonami, a na życzenie zapewniamy oprawę muzyczną, wieńce i wiązanki.</p>
       <p>Organizujemy pogrzeby dla rodzin z Wrzosowej, Poczesnej, Częstochowy, Kamienicy Polskiej, Konopisk, Starczy, Olsztyna, Mykanowa i okolicznych miejscowości. Transport zmarłych wykonujemy w całym kraju i za granicę.</p>
+{wyroznienie(R)}
       <a class="dalej" href="galeria/">Zakład i zdjęcia</a>
     </div>
     <div class="zaklad-foto">
@@ -396,14 +415,14 @@ def oferta():
     R = '../'
     S = '(max-width:900px) 100vw, 540px'
     bloki = [
-        ('organizacja', 'Organizacja pogrzebu i formalności', 'biuro', 'Biuro obsługi klienta w Zakładzie Pogrzebowym Morfeusz we Wrzosowej',
+        ('organizacja', 'Organizacja pogrzebu i formalności', 'biuro-morfeusz-wrzosowa', 'Biuro obsługi klienta w Zakładzie Pogrzebowym MORFEUSZ we Wrzosowej',
          ['Pogrzeb organizujemy kompleksowo, więc rodzina nie musi sama chodzić po urzędach ani ustalać szczegółów z kilkoma firmami. Wszystko omawiamy spokojnie, w biurze zakładu albo przez telefon.'],
          ['Kompleksowa organizacja pogrzebu', 'Bezgotówkowa organizacja pogrzebu - rozliczenie z zasiłku pogrzebowego', 'Pomoc w formalnościach w urzędzie, parafii i na cmentarzu', 'Ceremonie wyznaniowe i świeckie'],
          ('gdy-umrze-bliska-osoba/', 'Formalności krok po kroku')),
         ('kremacje', 'Kremacje', 'stojak-urna', 'Stojak na urnę z bordowym aksamitem i świecami przy grobie',
          ['Organizujemy pogrzeby z kremacją: przewóz zmarłego do krematorium, wybór urny i pogrzeb urnowy na cmentarzu.'],
          ['Organizacja kremacji', 'Sprzedaż urn', 'Pogrzeb urnowy z oprawą na cmentarzu', 'Nagrobki urnowe'], None),
-        ('trumny-urny', 'Trumny, urny i ubrania', 'urny-zaklad-wrzosowa', 'Regał z urnami w zakładzie pogrzebowym we Wrzosowej',
+        ('trumny-urny', 'Trumny, urny i ubrania', 'regal-urny-morfeusz', 'Regał z urnami w Zakładzie Pogrzebowym MORFEUSZ we Wrzosowej',
          ['W zakładzie można wybrać trumnę lub urnę oraz ubranie dla zmarłego. Pomożemy dobrać je do rodzaju pogrzebu i życzeń rodziny.'],
          ['Sprzedaż trumien', 'Sprzedaż urn', 'Ubrania dla zmarłych'], None),
         ('ubieranie', 'Ubieranie i kosmetyka zmarłych', None, '',
@@ -561,7 +580,11 @@ def galeria():
     S = '(max-width:380px) 100vw, (max-width:900px) 50vw, 380px'
     grupy = [
         ('Siedziba i biuro', 'W biurze zakładu przy ul. Górnej 30 ustalamy szczegóły pogrzebu, można też wybrać urnę i trumnę.', [
-            ('biuro', 'Biuro obsługi'), ('urny-zaklad-wrzosowa', 'Urny w zakładzie')]),
+            ('biuro-morfeusz-wrzosowa', 'Biuro obsługi klienta we Wrzosowej'), ('biuro-sofa-urny', 'Biuro - miejsce na spokojną rozmowę'),
+            ('biuro-kacik-las', 'Kącik do rozmowy i regał z urnami'), ('regal-urny-morfeusz', 'Regał z urnami w zakładzie')]),
+        ('Wyróżnienie', WYR_OPIS, [
+            ('certyfikat-elitarny-lider-2026', 'Certyfikat Elitarny Lider Jakości 2026'),
+            ('statuetka-elitarny-lider-2026', 'Statuetka Elitarny Lider Jakości 2026')]),
         ('Kaplica', 'Przy zakładzie jest kaplica, w której rodzina może pożegnać zmarłego przed pogrzebem.', [
             ('kaplica', 'Kaplica przy zakładzie'), ('oprawa-kaplica', 'Kaplica przed pożegnaniem')]),
         ('Ceremonia', 'Przygotowujemy oprawę ceremonii w kościele: urnę lub trumnę na katafalku, świece, wieńce i wiązanki.', [
@@ -744,11 +767,14 @@ Wrzosowa i gmina Poczesna, Częstochowa, Kamienica Polska, Konopiska, Starcza, O
 """ + ''.join(f'- {u}\n' for u in USLUGI) + f"""
 Zakład ma własną kaplicę, własną chłodnię i karawany. Na cmentarzu rozstawia namiot z zasłonami. Usługi grabarskie wykonuje na cmentarzu we Wrzosowej.
 
+## Wyróżnienie
+- {WYR_TYTUL}: {WYR_TEKST} (certyfikat programu BellaMark).
+
 ## Strony
 - [Strona główna]({DOMENA}/): telefon całodobowy, zakres usług, zakład we Wrzosowej
 - [Oferta]({DOMENA}/oferta/): organizacja pogrzebu i formalności, kremacje, trumny i urny, ubieranie zmarłych, transport i chłodnia, oprawa ceremonii, usługi grabarskie, kamieniarstwo
 - [Gdy umrze bliska osoba]({DOMENA}/gdy-umrze-bliska-osoba/): poradnik krok po kroku - karta zgonu, akt zgonu, dokumenty, zasiłek pogrzebowy (ZUS, KRUS, MSWiA, MON), pogrzeb bezgotówkowy, najczęstsze pytania
-- [O zakładzie]({DOMENA}/galeria/): zdjęcia siedziby, kaplicy, chłodni, karawanów i przygotowania ceremonii
+- [O zakładzie]({DOMENA}/galeria/): zdjęcia siedziby, biura, kaplicy, chłodni, karawanów i przygotowania ceremonii, certyfikat Elitarny Lider Jakości 2026
 - [Kontakt]({DOMENA}/kontakt/): telefony, adres, mapa dojazdu, formularz kontaktowy
 
 ## Ważne

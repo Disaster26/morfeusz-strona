@@ -145,21 +145,106 @@
    1373
   ]
  ],
- "urny-zaklad-wrzosowa": [
+ "regal-urny-morfeusz": [
   [
-   "urny-zaklad-wrzosowa-480.webp",
+   "regal-urny-morfeusz-480.webp",
    480,
-   264
+   642
   ],
   [
-   "urny-zaklad-wrzosowa-800.webp",
+   "regal-urny-morfeusz-800.webp",
    800,
-   440
+   1070
   ],
   [
-   "urny-zaklad-wrzosowa-1200.webp",
+   "regal-urny-morfeusz-1200.webp",
    1200,
-   660
+   1605
+  ]
+ ],
+ "biuro-morfeusz-wrzosowa": [
+  [
+   "biuro-morfeusz-wrzosowa-480.webp",
+   480,
+   360
+  ],
+  [
+   "biuro-morfeusz-wrzosowa-800.webp",
+   800,
+   600
+  ],
+  [
+   "biuro-morfeusz-wrzosowa-1200.webp",
+   1200,
+   900
+  ]
+ ],
+ "biuro-sofa-urny": [
+  [
+   "biuro-sofa-urny-480.webp",
+   480,
+   360
+  ],
+  [
+   "biuro-sofa-urny-800.webp",
+   800,
+   600
+  ],
+  [
+   "biuro-sofa-urny-1200.webp",
+   1200,
+   900
+  ]
+ ],
+ "biuro-kacik-las": [
+  [
+   "biuro-kacik-las-480.webp",
+   480,
+   792
+  ],
+  [
+   "biuro-kacik-las-800.webp",
+   800,
+   1320
+  ],
+  [
+   "biuro-kacik-las-1200.webp",
+   1200,
+   1980
+  ]
+ ],
+ "certyfikat-elitarny-lider-2026": [
+  [
+   "certyfikat-elitarny-lider-2026-480.webp",
+   480,
+   360
+  ],
+  [
+   "certyfikat-elitarny-lider-2026-800.webp",
+   800,
+   600
+  ],
+  [
+   "certyfikat-elitarny-lider-2026-1200.webp",
+   1200,
+   900
+  ]
+ ],
+ "statuetka-elitarny-lider-2026": [
+  [
+   "statuetka-elitarny-lider-2026-480.webp",
+   480,
+   868
+  ],
+  [
+   "statuetka-elitarny-lider-2026-800.webp",
+   800,
+   1447
+  ],
+  [
+   "statuetka-elitarny-lider-2026-1200.webp",
+   1200,
+   2170
   ]
  ],
  "karawany-morfeusz": [
@@ -177,18 +262,6 @@
    "karawany-morfeusz-1200.webp",
    1200,
    919
-  ]
- ],
- "biuro": [
-  [
-   "biuro-480.webp",
-   480,
-   360
-  ],
-  [
-   "biuro-900.webp",
-   900,
-   675
   ]
  ],
  "urny": [
