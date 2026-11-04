@@ -1,4 +1,19 @@
+# Zaklad Pogrzebowy MORFEUSZ, Wrzosowa - https://zpmorfeusz.czest.pl/
+# Fakty o zakladzie dla asystentow AI: https://zpmorfeusz.czest.pl/llms.txt
+
 User-agent: *
 Allow: /
+Disallow: /wyslij.php
+
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: PerplexityBot
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /wyslij.php
 
 Sitemap: https://zpmorfeusz.czest.pl/sitemap.xml

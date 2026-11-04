@@ -13,6 +13,9 @@ RewriteCond %{HTTPS} !=on [OR]
 RewriteCond %{HTTP_HOST} ^www\. [NC]
 RewriteRule ^(.*)$ https://zpmorfeusz.czest.pl/$1 [R=301,L]
 
+# 1b. katalog limitow/sekretu formularza (wyslij.php) niedostepny z sieci
+RewriteRule ^_limity(/|$) - [F,L]
+
 # 2. Stare adresy WordPressa -> nowe strony
 RewriteRule ^index\.php$ / [R=301,L]
 RewriteRule ^(oferta|galeria|kontakt|polityka-prywatnosci)$ /$1/ [R=301,L]
@@ -44,3 +47,4 @@ AddOutputFilterByType DEFLATE text/html text/css application/javascript image/sv
 </IfModule>
 AddType font/woff2 .woff2
 AddType image/webp .webp
+AddCharset utf-8 .txt .xml

@@ -7,16 +7,19 @@
 Folder _zrodla nie jest publikowany (GitHub Pages/Jekyll pomija katalogi z podkresleniem;
 na hosting klienta go nie wgrywamy).
 """
-import json, os, sys, html
+import json, os, re, sys, html
 
 PROD = '--produkcja' in sys.argv
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 INFO = json.load(open(os.path.join(os.path.dirname(__file__), 'zdjecia.json'), encoding='utf-8'))
 
 DOMENA = 'https://zpmorfeusz.czest.pl'
-FORM_ADRES = 'https://formsubmit.co/ajax/' + ('zpmorfeusz@onet.eu' if PROD else 'stasiu2626@gmail.com')
+# 04.11b: formularz wysyla wlasny skrypt wyslij.php na serwerze strony (zamiast FormSubmit); na GitHub Pages PHP nie dziala -
+# wtedy strona pokazuje komunikat z telefonem
+FORM_ADRES = '../wyslij.php'
 BASE_404 = '/' if PROD else '/morfeusz-strona/'
-WERSJA = '6'
+WERSJA = '7'
+DZIS = '2026-11-04'  # lastmod w sitemap.xml
 
 TEL = ('601 460 964', 'tel:+48601460964')
 TEL_STACJ = ('34 327 51 06', 'tel:+48343275106')
@@ -24,7 +27,16 @@ TEL_KOM = ('603 847 926', 'tel:+48603847926')
 MAIL = 'zpmorfeusz@onet.eu'
 GMAPS = 'https://maps.google.com/?cid=17143928824409373613'
 GTRASA = 'https://www.google.com/maps/dir/?api=1&destination=G%C3%B3rna+30%2C+42-263+Wrzosowa'
-OSM = 'https://www.openstreetmap.org/?mlat=50.74755&mlon=19.14560#map=17/50.74755/19.14560'
+# wspolrzedne ul. Gorna 30, Wrzosowa - OpenStreetMap/Nominatim (wezel 3921881973), sprawdzone 04.11.2026
+LAT, LON = 50.747554, 19.145602
+OSM = f'https://www.openstreetmap.org/?mlat={LAT}&mlon={LON}#map=17/{LAT}/{LON}'
+OBSZAR = ['Wrzosowa', 'Poczesna', 'Częstochowa', 'Kamienica Polska', 'Konopiska', 'Starcza', 'Olsztyn', 'Mykanów']
+# uslugi 1:1 z materialow klienta (materialy_klienta.txt, 27.10.2026)
+USLUGI = ['Kompleksowa organizacja pogrzebu', 'Bezgotówkowa organizacja pogrzebu', 'Sprzedaż trumien i urn', 'Kremacje', 'Karawany',
+          'Autokary', 'Dekoracje żałobne mieszkań', 'Wieńce i wiązanki', 'Własna chłodnia', 'Krajowy i międzynarodowy transport zwłok',
+          'Ubrania dla zmarłych', 'Ubieranie i kosmetyka osób zmarłych', 'Usługi grabarskie',
+          'Oprawa muzyczna pogrzebu (trąbka, skrzypce, orkiestra, organista)', 'Usługi kamieniarskie, litery i zdjęcia na pomnikach',
+          'Pomniki', 'Nagrobki urnowe', 'Poziomowanie i naprawa pomników']
 
 NAV = [('oferta/', 'Oferta'), ('gdy-umrze-bliska-osoba/', 'Gdy umrze bliska osoba'), ('galeria/', 'O zakładzie'), ('kontakt/', 'Kontakt')]
 
@@ -35,7 +47,7 @@ def e(s):
 
 # 04.11: zdjecia pionowe w poziomych ramkach pokazujemy w calosci (bez ucinania) na rozmytym tle z tego samego zdjecia
 CALY = {'kaplica', 'oprawa-kaplica', 'grob-bez-drabiny'}
-POZYCJA = {'karawany-trzy': '50% 58%', 'regal-urny': '50% 30%'}
+POZYCJA = {'karawany-morfeusz': '50% 58%', 'urny-zaklad-wrzosowa': '50% 30%'}
 
 
 def img(name, alt, sizes, R, eager=False, cls='', caly=None):
@@ -63,6 +75,8 @@ def najwiekszy(name):
 
 
 def schema_firma():
+    # schema.org nie ma typu FuneralHome (schema.org/FuneralHome = 404, sprawdzone 04.11.2026) - LocalBusiness + additionalType Funeral_home
+    dni = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     return {
         '@context': 'https://schema.org',
         '@type': 'LocalBusiness',
@@ -70,28 +84,39 @@ def schema_firma():
         '@id': DOMENA + '/#zaklad',
         'name': 'Zakład Pogrzebowy „MORFEUSZ” Ireneusz Jeziorowski',
         'alternateName': 'Zakład Pogrzebowy Morfeusz',
+        'description': 'Zakład pogrzebowy we Wrzosowej (gmina Poczesna, powiat częstochowski), działa od 1997 roku. '
+                       'Kompleksowa organizacja pogrzebów, kremacje, transport zwłok w kraju i za granicę, własna chłodnia i kaplica, '
+                       'usługi grabarskie i kamieniarskie. Czynny całą dobę.',
         'url': DOMENA + '/',
-        'image': DOMENA + '/img/' + najwiekszy('namiot-cmentarz'),
+        'image': [DOMENA + '/img/' + INFO['namiot-cmentarz'][2][0], DOMENA + '/img/' + najwiekszy('karawany-morfeusz'),
+                  DOMENA + '/img/' + najwiekszy('siedziba')],
+        'logo': DOMENA + '/img/logo-560.webp',
         'telephone': '+48601460964',
         'email': MAIL,
         'taxID': '5731706929',
         'foundingDate': '1997',
-        'logo': DOMENA + '/img/logo-560.webp',
         'address': {'@type': 'PostalAddress', 'streetAddress': 'ul. Górna 30', 'postalCode': '42-263',
                     'addressLocality': 'Wrzosowa', 'addressRegion': 'śląskie', 'addressCountry': 'PL'},
-        'geo': {'@type': 'GeoCoordinates', 'latitude': 50.74755, 'longitude': 19.14560},
+        'geo': {'@type': 'GeoCoordinates', 'latitude': LAT, 'longitude': LON},
         'hasMap': GMAPS,
-        'openingHoursSpecification': [{'@type': 'OpeningHoursSpecification',
-                                       'dayOfWeek': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-                                       'opens': '00:00', 'closes': '23:59'}],
+        'sameAs': [GMAPS],
+        'openingHours': 'Mo-Su 00:00-23:59',
+        'openingHoursSpecification': [{'@type': 'OpeningHoursSpecification', 'dayOfWeek': dni, 'opens': '00:00', 'closes': '23:59'}],
         'contactPoint': [
             {'@type': 'ContactPoint', 'telephone': '+48601460964', 'contactType': 'telefon całodobowy', 'availableLanguage': 'pl',
-             'hoursAvailable': {'@type': 'OpeningHoursSpecification', 'dayOfWeek': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], 'opens': '00:00', 'closes': '23:59'}},
+             'hoursAvailable': {'@type': 'OpeningHoursSpecification', 'dayOfWeek': dni, 'opens': '00:00', 'closes': '23:59'}},
             {'@type': 'ContactPoint', 'telephone': '+48343275106', 'contactType': 'telefon stacjonarny', 'availableLanguage': 'pl'},
             {'@type': 'ContactPoint', 'telephone': '+48603847926', 'contactType': 'telefon komórkowy', 'availableLanguage': 'pl'},
         ],
-        'areaServed': [{'@type': 'Place', 'name': n} for n in ['Wrzosowa', 'Poczesna', 'Częstochowa', 'Kamienica Polska', 'powiat częstochowski']],
+        'areaServed': [{'@type': 'City', 'name': n} for n in OBSZAR] + [{'@type': 'AdministrativeArea', 'name': 'powiat częstochowski'}],
+        'hasOfferCatalog': {'@type': 'OfferCatalog', 'name': 'Usługi pogrzebowe', 'itemListElement': [
+            {'@type': 'Offer', 'itemOffered': {'@type': 'Service', 'name': u}} for u in USLUGI]},
     }
+
+
+def faq_schema(pytania):
+    return {'@context': 'https://schema.org', '@type': 'FAQPage', 'mainEntity': [
+        {'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': re.sub('<[^>]+>', '', a)}} for q, a in pytania]}
 
 
 def okruszki(sciezka, nazwa):
@@ -100,7 +125,8 @@ def okruszki(sciezka, nazwa):
         {'@type': 'ListItem', 'position': 2, 'name': nazwa, 'item': DOMENA + '/' + sciezka}]}
 
 
-def strona(sciezka, tytul, opis, tresc, glowna=False, schemy=None, preload='', noindex=False, base=None):
+def strona(sciezka, tytul, opis, tresc, glowna=False, schemy=None, preload='', noindex=False, base=None,
+           og=('namiot-cmentarz', 'Namiot Zakładu Pogrzebowego Morfeusz na cmentarzu')):
     R = '' if sciezka == '' else '../'
     if base is not None:
         R = base
@@ -113,7 +139,8 @@ def strona(sciezka, tytul, opis, tresc, glowna=False, schemy=None, preload='', n
     for s in (schemy or []):
         sch += '<script type="application/ld+json">' + json.dumps(s, ensure_ascii=False, separators=(',', ':')) + '</script>\n'
     canon = '' if base is not None else f'<link rel="canonical" href="{DOMENA}/{sciezka}">\n'
-    og_img = DOMENA + '/img/' + INFO['namiot-cmentarz'][2][0]
+    og_v = [x for x in INFO[og[0]] if x[1] <= 1200][-1]
+    og_img = DOMENA + '/img/' + og_v[0]
     body_cls = ' class="strona-glowna"' if glowna else ''
     return f'''<!doctype html>
 <html lang="pl">
@@ -130,6 +157,10 @@ def strona(sciezka, tytul, opis, tresc, glowna=False, schemy=None, preload='', n
 <meta property="og:description" content="{e(opis)}">
 <meta property="og:url" content="{DOMENA}/{sciezka}">
 <meta property="og:image" content="{og_img}">
+<meta property="og:image:width" content="{og_v[1]}">
+<meta property="og:image:height" content="{og_v[2]}">
+<meta property="og:image:alt" content="{e(og[1])}">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="{R}favicon.ico" sizes="32x32">
 <link rel="icon" href="{R}favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="{R}apple-touch-icon.png">
@@ -254,12 +285,12 @@ def glowna():
     R = ''
     S_KAFEL = '(max-width:760px) 100vw, (max-width:1180px) 42vw, 280px'
     kafle = [
-        ('organizacja', 'biuro', 'Biuro obsługi klienta w zakładzie', 'Organizacja pogrzebu', ['Kompleksowa organizacja pogrzebu', 'Bezgotówkowa organizacja pogrzebów', 'Pomoc w formalnościach']),
+        ('organizacja', 'biuro', 'Biuro obsługi klienta w Zakładzie Pogrzebowym Morfeusz we Wrzosowej', 'Organizacja pogrzebu', ['Kompleksowa organizacja pogrzebu', 'Bezgotówkowa organizacja pogrzebów', 'Pomoc w formalnościach']),
         ('kremacje', 'stojak-urna', 'Stojak na urnę z bordowym aksamitem i świecami na cmentarzu', 'Kremacje', ['Organizacja kremacji', 'Sprzedaż urn', 'Nagrobki urnowe']),
-        ('trumny-urny', 'regal-urny', 'Regał z urnami w zakładzie', 'Trumny, urny, ubrania', ['Sprzedaż trumien i urn', 'Ubrania dla zmarłych']),
-        ('transport', 'karawany-trzy', 'Trzy karawany zakładu Morfeusz przed kościołem', 'Transport', ['Krajowy i międzynarodowy transport zwłok', 'Karawany i autokary', 'Własna chłodnia']),
+        ('trumny-urny', 'urny-zaklad-wrzosowa', 'Regał z urnami w zakładzie pogrzebowym we Wrzosowej', 'Trumny, urny, ubrania', ['Sprzedaż trumien i urn', 'Ubrania dla zmarłych']),
+        ('transport', 'karawany-morfeusz', 'Trzy karawany zakładu Morfeusz przed kościołem', 'Transport', ['Krajowy i międzynarodowy transport zwłok', 'Karawany i autokary', 'Własna chłodnia']),
         ('ubieranie', None, '', 'Ubieranie i kosmetyka', 'Ubieranie i kosmetyka osób zmarłych - z szacunkiem, według życzeń rodziny.'),
-        ('oprawa', 'oprawa-kaplica', 'Kaplica z trumną i wiązanką przed ceremonią', 'Oprawa ceremonii', ['Oprawa muzyczna: trąbka, skrzypce, orkiestra, organista', 'Wieńce i wiązanki', 'Dekoracje żałobne mieszkań']),
+        ('oprawa', 'oprawa-kaplica', 'Kaplica zakładu we Wrzosowej z trumną i wiązanką przed ceremonią', 'Oprawa ceremonii', ['Oprawa muzyczna: trąbka, skrzypce, orkiestra, organista', 'Wieńce i wiązanki', 'Dekoracje żałobne mieszkań']),
         ('cmentarz', 'grob-bez-drabiny', 'Namiot zakładu nad grobem przygotowanym do pochówku', 'Usługi grabarskie', 'Usługi grabarskie na cmentarzu we Wrzosowej: przygotowanie grobu i obsługa ceremonii.'),
         ('kamieniarstwo', None, '', 'Kamieniarstwo', ['Pomniki i nagrobki', 'Nagrobki urnowe', 'Liternictwo i zdjęcia na pomnikach', 'Poziomowanie i naprawa pomników']),
     ]
@@ -267,10 +298,10 @@ def glowna():
     for kot, foto, alt, h, tresc in kafle:
         t = ('<ul>' + ''.join(f'<li>{x}</li>' for x in tresc) + '</ul>') if isinstance(tresc, list) else f'<p>{tresc}</p>'
         if foto:
-            k += f'''      <a class="kafel" href="oferta/#{kot}">
+            k += f'''      <div class="kafel">
         <div class="kafel-foto">{img(foto, alt, S_KAFEL, R)}</div>
-        <div class="kafel-tx"><h3>{h}</h3>{t}</div>
-      </a>
+        <a class="kafel-tx" href="oferta/#{kot}"><h3>{h}</h3>{t}</a>
+      </div>
 '''
         else:
             k += f'''      <a class="kafel kafel-bez" href="oferta/#{kot}">
@@ -337,12 +368,12 @@ def glowna():
       <h2>Zakład we Wrzosowej</h2>
       <p>Działamy od 1997 roku. Zakład mieści się przy ul. Górnej 30 we Wrzosowej, w gminie Poczesna pod Częstochową. Mamy własną kaplicę, własną chłodnię oraz karawany, którymi przewozimy zmarłych w kraju i za granicę.</p>
       <p>Ceremonie obsługują stosownie ubrani, przeszkoleni pracownicy. Na cmentarzu rozstawiamy namiot z zasłonami, a na życzenie zapewniamy oprawę muzyczną, wieńce i wiązanki.</p>
-      <p>Organizujemy pogrzeby dla rodzin z Wrzosowej, Poczesnej, Częstochowy, Kamienicy Polskiej i okolicznych miejscowości.</p>
+      <p>Organizujemy pogrzeby dla rodzin z Wrzosowej, Poczesnej, Częstochowy, Kamienicy Polskiej, Konopisk, Starczy, Olsztyna, Mykanowa i okolicznych miejscowości. Transport zmarłych wykonujemy w całym kraju i za granicę.</p>
       <a class="dalej" href="galeria/">Zakład i zdjęcia</a>
     </div>
     <div class="zaklad-foto">
-      <figure class="fot-lewo">{img('siedziba', 'Budynek Zakładu Pogrzebowego Morfeusz przy ul. Górnej 30', '(max-width:760px) 50vw, 330px', R)}</figure>
-      <figure>{img('kaplica', 'Kaplica przy zakładzie z krzyżem na czerwonej ścianie', '(max-width:760px) 50vw, 330px', R, caly=False)}</figure>
+      <figure class="fot-lewo">{img('siedziba', 'Budynek Zakładu Pogrzebowego Morfeusz przy ul. Górnej 30 we Wrzosowej', '(max-width:760px) 50vw, 330px', R)}</figure>
+      <figure>{img('kaplica', 'Kaplica przy zakładzie we Wrzosowej z krzyżem na czerwonej ścianie', '(max-width:760px) 50vw, 330px', R, caly=False)}</figure>
     </div>
   </div>
 </section>
@@ -355,8 +386,8 @@ def glowna():
 </section>'''
     tresc = tresc.replace('<p class="k-czynne">Zakład czynny całą dobę w dni powszednie i święta.</p>',
                           '<p class="k-czynne">Zakład czynny całą dobę w dni powszednie i święta.</p>\n      <a class="dalej" href="kontakt/#formularz">Formularz kontaktowy</a>')
-    zapisz('', strona('', 'Zakład Pogrzebowy Morfeusz Wrzosowa - całą dobę 601 460 964',
-                      'Zakład Pogrzebowy „Morfeusz”, ul. Górna 30, Wrzosowa k. Częstochowy. Organizacja pogrzebów, kremacje, transport, własna chłodnia, kamieniarstwo. Całą dobę: 601 460 964.',
+    zapisz('', strona('', 'Zakład Pogrzebowy Morfeusz Wrzosowa k. Częstochowy - 601 460 964',
+                      'Zakład pogrzebowy we Wrzosowej (gm. Poczesna) od 1997 r. Pogrzeby, kremacje, transport, chłodnia, kamieniarstwo - Częstochowa i okolice. Całą dobę: 601 460 964.',
                       tresc, glowna=True, schemy=[schema_firma()], preload=preload_img('namiot-cmentarz', hero_sizes, R)))
 
 
@@ -365,23 +396,23 @@ def oferta():
     R = '../'
     S = '(max-width:900px) 100vw, 540px'
     bloki = [
-        ('organizacja', 'Organizacja pogrzebu i formalności', 'biuro', 'Biuro obsługi klienta w zakładzie',
+        ('organizacja', 'Organizacja pogrzebu i formalności', 'biuro', 'Biuro obsługi klienta w Zakładzie Pogrzebowym Morfeusz we Wrzosowej',
          ['Pogrzeb organizujemy kompleksowo, więc rodzina nie musi sama chodzić po urzędach ani ustalać szczegółów z kilkoma firmami. Wszystko omawiamy spokojnie, w biurze zakładu albo przez telefon.'],
          ['Kompleksowa organizacja pogrzebu', 'Bezgotówkowa organizacja pogrzebu - rozliczenie z zasiłku pogrzebowego', 'Pomoc w formalnościach w urzędzie, parafii i na cmentarzu', 'Ceremonie wyznaniowe i świeckie'],
          ('gdy-umrze-bliska-osoba/', 'Formalności krok po kroku')),
         ('kremacje', 'Kremacje', 'stojak-urna', 'Stojak na urnę z bordowym aksamitem i świecami przy grobie',
          ['Organizujemy pogrzeby z kremacją: przewóz zmarłego do krematorium, wybór urny i pogrzeb urnowy na cmentarzu.'],
          ['Organizacja kremacji', 'Sprzedaż urn', 'Pogrzeb urnowy z oprawą na cmentarzu', 'Nagrobki urnowe'], None),
-        ('trumny-urny', 'Trumny, urny i ubrania', 'regal-urny', 'Regał z urnami w zakładzie',
+        ('trumny-urny', 'Trumny, urny i ubrania', 'urny-zaklad-wrzosowa', 'Regał z urnami w zakładzie pogrzebowym we Wrzosowej',
          ['W zakładzie można wybrać trumnę lub urnę oraz ubranie dla zmarłego. Pomożemy dobrać je do rodzaju pogrzebu i życzeń rodziny.'],
          ['Sprzedaż trumien', 'Sprzedaż urn', 'Ubrania dla zmarłych'], None),
         ('ubieranie', 'Ubieranie i kosmetyka zmarłych', None, '',
          ['Przygotowanie zmarłego do pożegnania wykonujemy z szacunkiem i według życzeń rodziny. Można przynieść własne ubranie zmarłego albo wybrać je w zakładzie.'],
          ['Ubieranie osób zmarłych', 'Kosmetyka osób zmarłych', 'Ubrania dla zmarłych'], None),
-        ('transport', 'Transport zmarłych i własna chłodnia', 'karawany-trzy', 'Trzy karawany zakładu Morfeusz przed kościołem',
+        ('transport', 'Transport zmarłych i własna chłodnia', 'karawany-morfeusz', 'Trzy karawany zakładu Morfeusz przed kościołem',
          ['Przewozimy zmarłych własnymi karawanami do naszej chłodni, a w dniu pogrzebu na ceremonię. Wykonujemy też transport zmarłych na terenie całego kraju i za granicę.'],
          ['Karawany', 'Krajowy i międzynarodowy transport zwłok', 'Własna chłodnia', 'Autokary dla uczestników pogrzebu'], None),
-        ('oprawa', 'Oprawa ceremonii', 'oprawa-kaplica', 'Kaplica z trumną i wiązanką przed ceremonią',
+        ('oprawa', 'Oprawa ceremonii', 'oprawa-kaplica', 'Kaplica zakładu we Wrzosowej z trumną i wiązanką przed ceremonią',
          ['Na życzenie rodziny zapewniamy oprawę muzyczną, kwiaty i dekoracje. Pożegnanie może odbyć się w naszej kaplicy.'],
          ['Oprawa muzyczna: trąbka, skrzypce, orkiestra, organista', 'Wieńce i wiązanki', 'Dekoracje żałobne mieszkań'], None),
         ('cmentarz', 'Usługi grabarskie', 'grob-bez-drabiny', 'Namiot zakładu nad grobem wyłożonym zieloną matą',
@@ -417,7 +448,7 @@ def oferta():
 '''
     tresc = ph('Usługi pogrzebowe',
                'Świadczymy kompleksowe usługi pogrzebowe: od pierwszego telefonu, przez formalności, transport i przygotowanie zmarłego, po ceremonię, cmentarz i pomnik. Zakład jest czynny całą dobę, także w święta.',
-               R, 'kaplica', 'Kaplica przy zakładzie Morfeusz') + f'''
+               R, 'kaplica', 'Kaplica przy Zakładzie Pogrzebowym Morfeusz we Wrzosowej') + f'''
 
 <section class="sec">
   <div class="wrap">
@@ -433,12 +464,33 @@ def oferta():
     <a class="cta-tel" href="{TEL[1]}"><span>Telefon całodobowy</span><strong>{TEL[0]}</strong></a>
   </div>
 </section>'''
-    zapisz('oferta', strona('oferta/', 'Usługi pogrzebowe Wrzosowa, Częstochowa - oferta | Morfeusz',
-                            'Organizacja pogrzebów i formalności, kremacje, trumny i urny, transport zwłok w kraju i za granicę, własna chłodnia, oprawa muzyczna, wieńce, usługi grabarskie, pomniki, nagrobki i liternictwo.',
-                            tresc, schemy=[okruszki('oferta/', 'Oferta')]))
+    zapisz('oferta', strona('oferta/', 'Usługi pogrzebowe - Wrzosowa, Poczesna, Częstochowa | Zakład Morfeusz',
+                            'Organizacja pogrzebów, kremacje, trumny i urny, transport zwłok, własna chłodnia, oprawa muzyczna, usługi grabarskie i pomniki. Wrzosowa, Częstochowa, Konopiska i okolice.',
+                            tresc, schemy=[schema_firma(), okruszki('oferta/', 'Oferta')], og=('karawany-morfeusz', 'Karawany Zakładu Pogrzebowego Morfeusz')))
 
 
 # ---------------------------------------------------------------- poradnik
+# 04.11b: najczestsze pytania - widoczne na stronie i jako FAQPage (odpowiedzi wylacznie z tresci poradnika i materialow klienta)
+FAQ = [
+    ('Co zrobić najpierw, gdy bliska osoba umrze w domu?',
+     'Wezwij lekarza, który stwierdzi zgon i wystawi kartę zgonu. Potem zadzwoń do zakładu pod numer całodobowy 601 460 964 - '
+     'przyjedziemy i przewieziemy zmarłego do naszej chłodni o każdej porze, także w nocy i w święta.'),
+    ('Ile jest czasu na zgłoszenie zgonu w urzędzie stanu cywilnego?',
+     'Zgon trzeba zgłosić w ciągu 3 dni od wystawienia karty zgonu. Na podstawie upoważnienia od rodziny możemy załatwić to w urzędzie w Twoim imieniu.'),
+    ('Jakie dokumenty przygotować?',
+     'Kartę zgonu, dowód osobisty zmarłego, swój dowód osobisty oraz informacje o emeryturze lub rencie zmarłego (ZUS, KRUS, MSWiA, MON). '
+     'Przez telefon podpowiemy, co jest potrzebne w Twojej sytuacji.'),
+    ('Czy pogrzeb można zorganizować bez płacenia z góry?',
+     'Tak. Pogrzeb organizujemy bezgotówkowo - koszty rozliczamy bezpośrednio z zasiłku pogrzebowego. '
+     'Szczegóły, w tym ewentualną dopłatę ponad kwotę zasiłku, omawiamy przy ustalaniu pogrzebu.'),
+    ('Czy zakład jest czynny w nocy i w święta?',
+     'Tak. Zakład Pogrzebowy „Morfeusz” jest czynny całą dobę, w dni powszednie i święta. Telefon całodobowy: 601 460 964.'),
+    ('Na jakim terenie działa zakład?',
+     'Zakład mieści się we Wrzosowej (ul. Górna 30, gmina Poczesna). Organizujemy pogrzeby dla rodzin z Wrzosowej, Poczesnej, Częstochowy, '
+     'Kamienicy Polskiej, Konopisk, Starczy, Olsztyna, Mykanowa i okolic, a transport zmarłych wykonujemy w całym kraju i za granicę.'),
+]
+
+
 def poradnik():
     R = '../'
     tresc = ph('Co zrobić, gdy umrze bliska osoba',
@@ -483,6 +535,10 @@ def poradnik():
       </ul>
       <p>Usługi wykonujemy sami albo je koordynujemy, tak aby rodzina miała jeden kontakt w sprawie całego pogrzebu. <a href="{R}oferta/">Zobacz pełną ofertę</a>.</p>
 
+      <h2 id="pytania">Najczęstsze pytania</h2>
+      <div class="faq">
+{''.join(f"        <h3>{q}</h3>\n        <p>{a}</p>\n" for q, a in FAQ)}      </div>
+
       <p class="uwaga">Opis ma charakter ogólny. Szczegóły mogą się różnić w zależności od sytuacji, urzędu i parafii - zawsze chętnie podpowiemy przez telefon.</p>
     </div>
     <aside class="gdy-tel" aria-label="Telefony">
@@ -493,9 +549,10 @@ def poradnik():
     </aside>
   </div>
 </section>'''
-    zapisz('gdy-umrze-bliska-osoba', strona('gdy-umrze-bliska-osoba/', 'Co zrobić, gdy umrze bliska osoba - poradnik | Morfeusz',
+    zapisz('gdy-umrze-bliska-osoba', strona('gdy-umrze-bliska-osoba/', 'Co zrobić, gdy umrze bliska osoba - poradnik | Morfeusz Wrzosowa',
                                              'Krok po kroku: karta zgonu, akt zgonu, dokumenty, zasiłek pogrzebowy i pogrzeb bezgotówkowy. Zakład Pogrzebowy „Morfeusz”, Wrzosowa k. Częstochowy, całą dobę 601 460 964.',
-                                             tresc, schemy=[okruszki('gdy-umrze-bliska-osoba/', 'Gdy umrze bliska osoba')]))
+                                             tresc, schemy=[okruszki('gdy-umrze-bliska-osoba/', 'Gdy umrze bliska osoba'), faq_schema(FAQ)],
+                                             og=('kaplica', 'Kaplica Zakładu Pogrzebowego Morfeusz we Wrzosowej')))
 
 
 # ---------------------------------------------------------------- galeria
@@ -504,13 +561,13 @@ def galeria():
     S = '(max-width:380px) 100vw, (max-width:900px) 50vw, 380px'
     grupy = [
         ('Siedziba i biuro', 'W biurze zakładu przy ul. Górnej 30 ustalamy szczegóły pogrzebu, można też wybrać urnę i trumnę.', [
-            ('biuro', 'Biuro obsługi'), ('regal-urny', 'Urny w zakładzie')]),
+            ('biuro', 'Biuro obsługi'), ('urny-zaklad-wrzosowa', 'Urny w zakładzie')]),
         ('Kaplica', 'Przy zakładzie jest kaplica, w której rodzina może pożegnać zmarłego przed pogrzebem.', [
             ('kaplica', 'Kaplica przy zakładzie'), ('oprawa-kaplica', 'Kaplica przed pożegnaniem')]),
         ('Ceremonia', 'Przygotowujemy oprawę ceremonii w kościele: urnę lub trumnę na katafalku, świece, wieńce i wiązanki.', [
             ('ceremonia-kosciol', 'Oprawa ceremonii w kościele')]),
         ('Chłodnia i transport', 'Własna chłodnia i karawany pozwalają nam zająć się zmarłym od razu, o każdej porze.', [
-            ('chlodnia', 'Własna chłodnia'), ('karawan', 'Karawan zakładu'), ('karawany-trzy', 'Karawany przed kościołem')]),
+            ('chlodnia', 'Własna chłodnia'), ('karawan', 'Karawan zakładu'), ('karawany-morfeusz', 'Karawany przed kościołem')]),
         ('Na cmentarzu', 'Przy grobie rozstawiamy namiot z zasłonami, teren wokół wykładamy matą, a przy pogrzebie urnowym przygotowujemy stojak na urnę.', [
             ('namiot-cmentarz', 'Namiot zakładu w alei cmentarza'), ('grob-bez-drabiny', 'Grób przygotowany do pochówku'),
             ('stojak-urna', 'Stojak na urnę ze świecami'), ('pogrzeb-urnowy', 'Przygotowanie do pogrzebu urnowego'),
@@ -529,18 +586,23 @@ def galeria():
 '''
     tresc = ph('Zakład we Wrzosowej',
                'Zakład Pogrzebowy „Morfeusz” mieści się przy ul. Górnej 30 we Wrzosowej, w gminie Poczesna pod Częstochową. Mamy własną kaplicę, chłodnię i karawany. Poniżej zdjęcia zakładu i ceremonii, które przygotowywaliśmy.',
-               R, 'siedziba', 'Budynek Zakładu Pogrzebowego Morfeusz') + f'''
+               R, 'siedziba', 'Budynek Zakładu Pogrzebowego Morfeusz, ul. Górna 30, Wrzosowa') + f'''
 
 <section class="sec">
   <div class="wrap">
 {g}  </div>
 </section>'''
-    zapisz('galeria', strona('galeria/', 'Zakład i galeria - Zakład Pogrzebowy Morfeusz, Wrzosowa',
-                             'Siedziba zakładu przy ul. Górnej 30 we Wrzosowej, kaplica, własna chłodnia, karawany oraz zdjęcia przygotowania ceremonii na cmentarzach w okolicach Częstochowy.',
-                             tresc, schemy=[okruszki('galeria/', 'O zakładzie')]))
+    zapisz('galeria', strona('galeria/', 'Zakład we Wrzosowej - kaplica, chłodnia, karawany | Morfeusz',
+                             'Siedziba zakładu przy ul. Górnej 30 we Wrzosowej (gm. Poczesna), kaplica, własna chłodnia, karawany oraz zdjęcia przygotowania ceremonii na cmentarzach w okolicach Częstochowy.',
+                             tresc, schemy=[okruszki('galeria/', 'O zakładzie')], og=('siedziba', 'Siedziba Zakładu Pogrzebowego Morfeusz we Wrzosowej')))
 
 
 # ---------------------------------------------------------------- kontakt
+KCZ = '<p class="k-czynne">Zakład czynny całą dobę w dni powszednie i święta.</p>'
+OBSZAR_P = ('\n      <p class="k-obszar">Obszar działania: Wrzosowa i gmina Poczesna, Częstochowa, Kamienica Polska, Konopiska, Starcza, '
+            'Olsztyn, Mykanów i okolice. Transport zmarłych w całym kraju i za granicę.</p>')
+
+
 def kontakt():
     R = '../'
     tresc = ph('Kontakt',
@@ -548,7 +610,7 @@ def kontakt():
 
 <section class="sec">
   <div class="wrap kontakt">
-{blok_kontakt(R).replace('<h2>Kontakt</h2>', '<h2>Telefony i adres</h2>')}
+{blok_kontakt(R).replace('<h2>Kontakt</h2>', '<h2>Telefony i adres</h2>').replace(KCZ, KCZ + OBSZAR_P)}
 {blok_mapa(R)}
   </div>
 </section>
@@ -563,7 +625,7 @@ def kontakt():
       </div>
       <p class="k-firma">Zakład Pogrzebowy „MORFEUSZ” Ireneusz Jeziorowski<br>NIP 573-170-69-29, REGON 150320820</p>
     </div>
-    <form class="form" id="form-kontakt" novalidate data-adres="{FORM_ADRES}">
+    <form class="form" id="form-kontakt" action="{FORM_ADRES}" method="post" novalidate data-adres="{FORM_ADRES}">
       <div>
         <label for="f-imie">Imię i nazwisko</label>
         <input id="f-imie" name="imie" type="text" autocomplete="name" required>
@@ -591,7 +653,7 @@ def kontakt():
 </section>'''
     zapisz('kontakt', strona('kontakt/', 'Kontakt - Zakład Pogrzebowy Morfeusz, Wrzosowa, ul. Górna 30',
                              'Zakład Pogrzebowy „Morfeusz”, ul. Górna 30, 42-263 Wrzosowa (gm. Poczesna). Telefon całodobowy 601 460 964, tel. 34 327 51 06, kom. 603 847 926, zpmorfeusz@onet.eu.',
-                             tresc, schemy=[schema_firma(), okruszki('kontakt/', 'Kontakt')]))
+                             tresc, schemy=[schema_firma(), okruszki('kontakt/', 'Kontakt')], og=('siedziba', 'Siedziba Zakładu Pogrzebowego Morfeusz, ul. Górna 30, Wrzosowa')))
 
 
 # ---------------------------------------------------------------- polityka
@@ -609,7 +671,8 @@ def polityka():
     <p>Podstawą prawną jest podjęcie działań na Twoje żądanie przed zawarciem umowy i jej wykonanie (art. 6 ust. 1 lit. b RODO) oraz nasz prawnie uzasadniony interes, czyli udzielenie odpowiedzi na pytanie (art. 6 ust. 1 lit. f RODO). Podanie danych jest dobrowolne, ale bez numeru telefonu lub adresu e-mail nie będziemy mogli odpowiedzieć.</p>
 
     <h2>Komu przekazujemy dane</h2>
-    <p>Wiadomości z formularza są przekazywane na naszą skrzynkę e-mail za pośrednictwem usługi FormSubmit (formsubmit.co). Dane mogą też trafić do dostawcy hostingu strony i dostawcy poczty e-mail - wyłącznie w zakresie potrzebnym do działania tych usług. Korzystanie z usługi FormSubmit może wiązać się z przekazaniem danych poza Europejski Obszar Gospodarczy.</p>
+    <p>Wiadomości z formularza wysyła na naszą skrzynkę e-mail skrypt działający na serwerze tej strony - bez pośrednictwa zewnętrznych usług formularzy. Jeśli podasz adres e-mail, wyślemy na niego krótkie automatyczne potwierdzenie przyjęcia wiadomości (bez jej treści). Dane mogą trafić do dostawcy hostingu strony i dostawcy poczty e-mail - wyłącznie w zakresie potrzebnym do działania tych usług.</p>
+    <p>Formularz chroni się przed automatami: pobiera z serwera znacznik antyspamowy (podpisaną godzinę otwarcia formularza) i ogranicza liczbę wiadomości wysyłanych w krótkim czasie. W tym celu serwer przechowuje najdłużej przez dobę wyłącznie godziny wysyłki i zaszyfrowane skróty (nie da się z nich odczytać adresu IP ani adresu e-mail).</p>
 
     <h2>Jak długo przechowujemy dane</h2>
     <p>Dane z wiadomości przechowujemy przez czas potrzebny do załatwienia sprawy, a jeśli dojdzie do wykonania usługi - przez okres wymagany przepisami (np. podatkowymi) oraz okres przedawnienia ewentualnych roszczeń.</p>
@@ -623,7 +686,7 @@ def polityka():
 </section>'''
     zapisz('polityka-prywatnosci', strona('polityka-prywatnosci/', 'Polityka prywatności - Zakład Pogrzebowy Morfeusz',
                                            'Zasady przetwarzania danych osobowych na stronie Zakładu Pogrzebowego „Morfeusz” we Wrzosowej: administrator, cel, prawa, pliki cookies.',
-                                           tresc))
+                                           tresc, schemy=[okruszki('polityka-prywatnosci/', 'Polityka prywatności')]))
 
 
 def nie_znaleziono():
@@ -646,13 +709,56 @@ def sitemap_robots():
     pri = {'': '1.0', 'polityka-prywatnosci/': '0.3'}
     x = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     for u in urls:
-        x += f'  <url><loc>{DOMENA}/{u}</loc><priority>{pri.get(u, "0.8")}</priority></url>\n'
+        x += f'  <url><loc>{DOMENA}/{u}</loc><lastmod>{DZIS}</lastmod><priority>{pri.get(u, "0.8")}</priority></url>\n'
     x += '</urlset>\n'
     open(os.path.join(ROOT, 'sitemap.xml'), 'w', encoding='utf-8', newline='\n').write(x)
-    open(os.path.join(ROOT, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write(
-        f'User-agent: *\nAllow: /\n\nSitemap: {DOMENA}/sitemap.xml\n')
+    # 04.11b: boty wyszukiwarek i asystentow AI wpuszczone jawnie; na GitHub Pages (wersja testowa) strony i tak maja noindex
+    boty = ['GPTBot', 'OAI-SearchBot', 'ChatGPT-User', 'PerplexityBot', 'ClaudeBot', 'Claude-SearchBot', 'Google-Extended', 'Applebot-Extended']
+    r = '# Zaklad Pogrzebowy MORFEUSZ, Wrzosowa - https://zpmorfeusz.czest.pl/\n# Fakty o zakladzie dla asystentow AI: ' + DOMENA + '/llms.txt\n\n'
+    r += 'User-agent: *\nAllow: /\nDisallow: /wyslij.php\n\n'
+    r += ''.join(f'User-agent: {b}\n' for b in boty) + 'Allow: /\nDisallow: /wyslij.php\n\n'
+    r += f'Sitemap: {DOMENA}/sitemap.xml\n'
+    open(os.path.join(ROOT, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write(r)
+
+
+def llms():
+    t = f"""# Zakład Pogrzebowy „MORFEUSZ” - Wrzosowa (gmina Poczesna, k. Częstochowy)
+
+> Zakład pogrzebowy Ireneusza Jeziorowskiego we Wrzosowej, działający od 1997 roku. Kompleksowa organizacja pogrzebów, kremacje, transport zmarłych w kraju i za granicę, własna chłodnia i kaplica, usługi grabarskie i kamieniarskie. Czynny całą dobę, w dni powszednie i święta.
+
+## Kontakt
+- Telefon całodobowy: {TEL[0]} (+48 601 460 964)
+- Telefon stacjonarny: {TEL_STACJ[0]}
+- Telefon komórkowy: {TEL_KOM[0]}
+- E-mail: {MAIL}
+- Adres: ul. Górna 30, 42-263 Wrzosowa, gmina Poczesna, powiat częstochowski, województwo śląskie
+- Współrzędne: {LAT}, {LON}
+- Wizytówka Google: {GMAPS}
+- Godziny: całą dobę, 7 dni w tygodniu, także w święta
+- Firma: Zakład Pogrzebowy „MORFEUSZ” Ireneusz Jeziorowski, NIP 573-170-69-29, REGON 150320820
+
+## Obszar działania
+Wrzosowa i gmina Poczesna, Częstochowa, Kamienica Polska, Konopiska, Starcza, Olsztyn, Mykanów i okolice. Transport zmarłych na terenie całego kraju i za granicę.
+
+## Usługi
+""" + ''.join(f'- {u}\n' for u in USLUGI) + f"""
+Zakład ma własną kaplicę, własną chłodnię i karawany. Na cmentarzu rozstawia namiot z zasłonami. Usługi grabarskie wykonuje na cmentarzu we Wrzosowej.
+
+## Strony
+- [Strona główna]({DOMENA}/): telefon całodobowy, zakres usług, zakład we Wrzosowej
+- [Oferta]({DOMENA}/oferta/): organizacja pogrzebu i formalności, kremacje, trumny i urny, ubieranie zmarłych, transport i chłodnia, oprawa ceremonii, usługi grabarskie, kamieniarstwo
+- [Gdy umrze bliska osoba]({DOMENA}/gdy-umrze-bliska-osoba/): poradnik krok po kroku - karta zgonu, akt zgonu, dokumenty, zasiłek pogrzebowy (ZUS, KRUS, MSWiA, MON), pogrzeb bezgotówkowy, najczęstsze pytania
+- [O zakładzie]({DOMENA}/galeria/): zdjęcia siedziby, kaplicy, chłodni, karawanów i przygotowania ceremonii
+- [Kontakt]({DOMENA}/kontakt/): telefony, adres, mapa dojazdu, formularz kontaktowy
+
+## Ważne
+- W pilnej sprawie (śmierć bliskiej osoby) należy dzwonić na numer całodobowy {TEL[0]}; formularz na stronie służy do spraw, które mogą poczekać.
+- Pogrzeb można zorganizować bezgotówkowo - z rozliczeniem z zasiłku pogrzebowego.
+- Strona nie podaje cennika - koszty omawiane są przy ustalaniu pogrzebu, przez telefon albo w biurze zakładu.
+"""
+    open(os.path.join(ROOT, 'llms.txt'), 'w', encoding='utf-8', newline='\n').write(t)
 
 
 if __name__ == '__main__':
-    glowna(); oferta(); poradnik(); galeria(); kontakt(); polityka(); nie_znaleziono(); sitemap_robots()
+    glowna(); oferta(); poradnik(); galeria(); kontakt(); polityka(); nie_znaleziono(); sitemap_robots(); llms()
     print('Zbudowano:', 'PRODUKCJA' if PROD else 'TEST (noindex, formularz testowy)')
